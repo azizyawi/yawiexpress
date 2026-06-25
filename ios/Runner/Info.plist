@@ -48,10 +48,12 @@
 	</array>
 
 	<key>UISupportedInterfaceOrientations~ipad</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-	</array>
+   <array>
+	  <string>UIInterfaceOrientationPortrait</string>
+	  <string>UIInterfaceOrientationPortraitUpsideDown</string>
+	  <string>UIInterfaceOrientationLandscapeLeft</string>
+	  <string>UIInterfaceOrientationLandscapeRight</string>
+   </array>
 
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
