@@ -2,12 +2,27 @@ workflows:
   ios-release:
     name: iOS Release
     instance_type: mac_mini_m2
+
+    integrations:
+      app_store_connect: WANPADI
+
     environment:
       flutter: stable
       xcode: latest
       cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.wanpadi.customer
+
     scripts:
       - flutter pub get
-      - flutter build ipa --release
+      - xcode-project use-profiles
+      - flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
+
     artifacts:
       - build/ios/ipa/*.ipa
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
