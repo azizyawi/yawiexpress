@@ -61,10 +61,18 @@ class PushNotificationService {
       '@mipmap/ic_launcher',
     );
 
-    const initSettings = InitializationSettings(android: androidSettings);
+    const iosSettings = DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
 
-    await _localNotifications.initialize(settings: initSettings);
+    const initSettings = InitializationSettings(
+      android: androidSettings,
+      iOS: iosSettings,
+    );
 
+await _localNotifications.initialize(settings: initSettings);
     final androidPlugin = _localNotifications
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
@@ -99,7 +107,7 @@ class PushNotificationService {
         id: notification.hashCode,
         title: notification.title ?? 'WANMAC',
         body: notification.body ?? 'You have a new update',
-        notificationDetails: const NotificationDetails(
+       notificationDetails: const NotificationDetails(
           android: AndroidNotificationDetails(
             _channelId,
             _channelName,
@@ -111,6 +119,11 @@ class PushNotificationService {
             enableVibration: true,
             icon: '@drawable/ic_stat_wanmac',
             color: Color(0xFF2F49D1),
+          ),
+          iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
           ),
         ),
         payload: jsonEncode(message.data),
