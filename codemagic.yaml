@@ -16,6 +16,9 @@ workflows:
 
     scripts:
       - flutter pub get
+      - app-store-connect fetch-signing-files com.wanpadi.customer --type IOS_APP_STORE
+      - keychain initialize
+      - keychain add-certificates
       - xcode-project use-profiles
       - flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
 
