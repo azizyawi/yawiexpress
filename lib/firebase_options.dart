@@ -60,13 +60,12 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyDRgG2UPdGAUW3m1vX6bv3DQq4Eki4dvWI',
-    appId: '1:94893802852:ios:c3723436c22531c899a671',
+    appId: '1:94893802852:ios:5ff4a71921fbfb8899a671',
     messagingSenderId: '94893802852',
     projectId: 'wanmac-a3049',
     storageBucket: 'wanmac-a3049.firebasestorage.app',
-    iosBundleId: 'com.example.wanmac',
+    iosBundleId: 'com.wanpadi.customer',
   );
-
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyDRgG2UPdGAUW3m1vX6bv3DQq4Eki4dvWI',
     appId: '1:94893802852:ios:c3723436c22531c899a671',
