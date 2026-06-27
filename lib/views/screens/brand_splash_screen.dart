@@ -196,7 +196,7 @@ class _BrandSplashScreenState extends State<BrandSplashScreen>
                                     child: Opacity(
                                       opacity: _textOpacityAnimation.value,
                                       child: Text(
-                                        'WANMAC',
+                                        'WANPADI',
                                         style: GoogleFonts.nunito(
                                           color: Colors.white,
                                           fontSize: titleFontSize,

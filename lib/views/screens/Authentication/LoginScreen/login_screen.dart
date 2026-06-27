@@ -197,7 +197,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: ConstrainedBox(
                       constraints: BoxConstraints(maxWidth: r(310)),
                       child: Text(
-                        'Enter your phone number to continue with your Wanmac account.',
+                        'Enter your phone number to continue with your Wanpadi account.',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.montserrat(
                           fontSize: r(15),
