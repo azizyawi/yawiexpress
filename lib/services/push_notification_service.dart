@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -35,7 +36,6 @@ class PushNotificationService {
   static Future<void> syncTokenAfterLogin() async {
     await initialize();
 
-    // Give Auth/Cognito time to finish after fresh login or reinstall.
     await Future.delayed(const Duration(milliseconds: 500));
 
     await _saveDeviceToken();
@@ -72,7 +72,7 @@ class PushNotificationService {
       iOS: iosSettings,
     );
 
-await _localNotifications.initialize(settings: initSettings);
+    await _localNotifications.initialize(settings: initSettings);
     final androidPlugin = _localNotifications
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
@@ -107,7 +107,7 @@ await _localNotifications.initialize(settings: initSettings);
         id: notification.hashCode,
         title: notification.title ?? 'WANMAC',
         body: notification.body ?? 'You have a new update',
-       notificationDetails: const NotificationDetails(
+        notificationDetails: const NotificationDetails(
           android: AndroidNotificationDetails(
             _channelId,
             _channelName,
@@ -132,16 +132,39 @@ await _localNotifications.initialize(settings: initSettings);
   }
 
   static Future<void> _saveDeviceToken() async {
-    final fcmToken = await _messaging.getToken();
+    try {
+      if (Platform.isIOS) {
+        String? apnsToken;
 
-    debugPrint('PUSH FCM TOKEN: $fcmToken');
+        for (int i = 0; i < 10; i++) {
+          apnsToken = await FirebaseMessaging.instance.getAPNSToken();
 
-    if (fcmToken == null || fcmToken.isEmpty) {
-      debugPrint('PUSH FCM token is empty');
-      return;
+          if (apnsToken != null) break;
+
+          await Future.delayed(const Duration(seconds: 1));
+        }
+
+        if (apnsToken == null) {
+          debugPrint('⚠️ APNS token not ready yet. Skipping FCM token sync.');
+          return;
+        }
+
+        debugPrint('🍎 APNS token ready: $apnsToken');
+      }
+
+      final fcmToken = await FirebaseMessaging.instance.getToken();
+
+      if (fcmToken == null || fcmToken.isEmpty) {
+        debugPrint('⚠️ FCM token is null or empty');
+        return;
+      }
+
+      debugPrint('🔥 FCM token: $fcmToken');
+
+      await _sendTokenToBackend(fcmToken);
+    } catch (error) {
+      debugPrint('❌ Failed to save push token: $error');
     }
-
-    await _sendTokenToBackend(fcmToken);
   }
 
   static void _listenToTokenRefresh() {

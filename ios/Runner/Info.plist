@@ -63,7 +63,9 @@
 
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Wanpadi uses your location to help you select pickup and delivery locations, calculate delivery estimates, and track active orders.</string>
-
+    
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>Wanpadi only uses your location to support pickup and delivery features while you are using the app. This customer app does not track your location in the background.</string>
 	
 	<key>NSUserNotificationUsageDescription</key>
 	<string>Wanpadi sends notifications about your delivery status, rider updates, and important account alerts.</string>
