@@ -118,6 +118,13 @@ class _BrandSplashScreenState extends State<BrandSplashScreen>
       desktop: 30,
     );
 
+    final double logoTextSpacing = _responsiveValue(
+      width: screenWidth,
+      phone: 7,
+      tablet: 12,
+      desktop: 16,
+    );
+
     final double bikeWidth = _responsiveValue(
       width: screenWidth,
       phone: shortestSide * 0.44,
@@ -191,12 +198,16 @@ class _BrandSplashScreenState extends State<BrandSplashScreen>
                                     width: currentLogoWidth,
                                     fit: BoxFit.contain,
                                   ),
+                                  SizedBox(
+                                    height: logoTextSpacing,
+                                  ), // Increase to 20 or 24 if you want more gap
+
                                   Transform.translate(
                                     offset: Offset(0, -textLift),
                                     child: Opacity(
                                       opacity: _textOpacityAnimation.value,
                                       child: Text(
-                                        'WANPADI',
+                                        'Wanpadi',
                                         style: GoogleFonts.nunito(
                                           color: Colors.white,
                                           fontSize: titleFontSize,

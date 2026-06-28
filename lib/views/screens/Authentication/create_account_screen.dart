@@ -171,9 +171,6 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         }
         return true;
 
-      case 3:
-        return true;
-
       default:
         return true;
     }
@@ -184,7 +181,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
     if (!_validateCurrentStep()) return;
 
-    if (currentStep < 3) {
+    if (currentStep < 2) {
       setState(() => currentStep++);
     } else {
       _handleSignUp();
@@ -248,18 +245,16 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     'Create your account',
     'Personal information',
     'Terms and referral',
-    'Confirm your details',
   ];
 
   List<String> get _stepSubtitles => const [
     'Use an active number for delivery calls and updates.',
     'Provide your name exactly as it should appear on your profile.',
     'Accept the terms to continue. Referral code is optional.',
-    'Review your details carefully before we send your verification code.',
   ];
 
   String get _buttonText =>
-      currentStep == 3 ? 'Continue to verification' : 'Continue';
+      currentStep == 2 ? 'Continue to verification' : 'Continue';
 
   Widget _buildHeader() {
     final isTablet = _isTablet(context);
@@ -277,7 +272,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             _BackButtonCircle(onTap: _previousStep),
             const Spacer(),
             Text(
-              '${currentStep + 1}/4',
+              '${currentStep + 1}/3',
               style: GoogleFonts.montserrat(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
@@ -289,11 +284,11 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         SizedBox(height: isShort ? 22 : 28),
         Row(
           children: List.generate(
-            4,
+            3,
             (index) => Expanded(
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 220),
-                margin: EdgeInsets.only(right: index == 3 ? 0 : 8),
+                margin: EdgeInsets.only(right: index == 2 ? 0 : 8),
                 height: 4,
                 decoration: BoxDecoration(
                   color: index <= currentStep
@@ -426,193 +421,6 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     );
   }
 
-  Widget _buildReviewCard() {
-    final fullName =
-        '${firstNameController.text.trim()} ${lastNameController.text.trim()}'
-            .trim();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _summaryMessage(
-          message:
-              'Here’s your account summary. Please confirm everything looks correct before verification.',
-          isMain: true,
-        ),
-        const SizedBox(height: 16),
-        _summaryGroup(
-          title: 'Contact summary',
-          onEdit: () => setState(() => currentStep = 0),
-          children: [
-            _summaryBubble(
-              label: 'Phone number',
-              value: _formatPhoneNumber(phoneController.text.trim()),
-            ),
-            _summaryBubble(
-              label: 'Email address',
-              value: emailController.text.trim(),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        _summaryGroup(
-          title: 'Profile summary',
-          onEdit: () => setState(() => currentStep = 1),
-          children: [
-            _summaryBubble(label: 'Full name', value: fullName),
-            _summaryBubble(
-              label: 'Referral code',
-              value: referralController.text.trim().isEmpty
-                  ? 'Not added'
-                  : referralController.text.trim().toUpperCase(),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        _summaryMessage(
-          message:
-              'Next, Wanpadi will send a secure verification code to your phone number.',
-        ),
-      ],
-    );
-  }
-
-  Widget _summaryMessage({required String message, bool isMain = false}) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 420),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: isMain ? AppColors.brandBlueDark : Colors.white,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(22),
-            topRight: Radius.circular(22),
-            bottomRight: Radius.circular(22),
-            bottomLeft: Radius.circular(7),
-          ),
-          border: isMain ? null : Border.all(color: const Color(0xFFECEFF5)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.035),
-              blurRadius: 18,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Text(
-          message,
-          style: GoogleFonts.montserrat(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            height: 1.58,
-            color: isMain ? Colors.white : AppColors.textPrimary,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _summaryGroup({
-    required String title,
-    required VoidCallback onEdit,
-    required List<Widget> children,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, right: 4, bottom: 9),
-          child: Row(
-            children: [
-              Text(
-                title,
-                style: GoogleFonts.montserrat(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const Spacer(),
-              GestureDetector(
-                onTap: onEdit,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 11,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.brandBlueDark.withOpacity(0.07),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    'Edit',
-                    style: GoogleFonts.montserrat(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.brandBlueDark,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        ...children,
-      ],
-    );
-  }
-
-  Widget _summaryBubble({required String label, required String value}) {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: Container(
-        width: double.infinity,
-        margin: const EdgeInsets.only(bottom: 9, left: 28),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF7F9FC),
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(21),
-            topRight: Radius.circular(21),
-            bottomLeft: Radius.circular(21),
-            bottomRight: Radius.circular(7),
-          ),
-          border: Border.all(color: const Color(0xFFEAEFF6)),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                label,
-                style: GoogleFonts.montserrat(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textHint,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Flexible(
-              flex: 2,
-              child: Text(
-                value,
-                textAlign: TextAlign.right,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.montserrat(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildStepContent() {
     switch (currentStep) {
       case 0:
@@ -679,10 +487,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           child: Column(
             children: [
               _FormFieldBlock(
-                label: 'Referral code',
+                label: 'Referral code (optional)',
                 child: _WanmacTextField(
                   controller: referralController,
-                  hintText: 'Optional',
+                  hintText: 'Enter referral code',
                   textCapitalization: TextCapitalization.characters,
                 ),
               ),
@@ -691,9 +499,6 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             ],
           ),
         );
-
-      case 3:
-        return _buildReviewCard();
 
       default:
         return const SizedBox.shrink();
@@ -817,7 +622,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  currentStep == 3
+                  currentStep == 2
                       ? 'Next: verify phone number'
                       : 'Secure account onboarding',
                   style: GoogleFonts.montserrat(

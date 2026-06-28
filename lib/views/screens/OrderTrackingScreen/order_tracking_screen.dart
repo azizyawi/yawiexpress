@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -921,8 +922,40 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                                             });
                                           }
                                         },
-                                        onMapCreated: (controller) async {
+                                       onMapCreated: (controller) async {
                                           _mapController = controller;
+
+                                          if (Platform.isIOS) {
+                                            WidgetsBinding.instance
+                                                .addPostFrameCallback((
+                                                  _,
+                                                ) async {
+                                                  if (!mounted ||
+                                                      _mapController == null ||
+                                                      order == null)
+                                                    return;
+
+                                                  await _mapController!.moveCamera(
+                                                    CameraUpdate.newCameraPosition(
+                                                      CameraPosition(
+                                                        target:
+                                                            hasRider &&
+                                                                riderPoint !=
+                                                                    null &&
+                                                                !isDelivered &&
+                                                                !isCancelled
+                                                            ? riderPoint!
+                                                            : pickupPoint,
+                                                        zoom: 15,
+                                                      ),
+                                                    ),
+                                                  );
+
+                                                  _showActiveAddressInfoWindow();
+                                                });
+
+                                            return;
+                                          }
 
                                           _fitMap();
                                           _showActiveAddressInfoWindow();
