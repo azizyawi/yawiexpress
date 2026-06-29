@@ -124,7 +124,7 @@ class PushNotificationService {
             presentAlert: true,
             presentBadge: true,
             presentSound: true,
-            sound: 'new_order.wav',
+            sound: 'new_order',
           ),
         ),
         payload: jsonEncode(message.data),
