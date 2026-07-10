@@ -289,58 +289,32 @@ class _ReferralHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
 
               children: [
-                Text(
-                  "Referral",
-
-                  style: GoogleFonts.montserrat(
-                    fontSize: r(28),
-
-                    fontWeight: FontWeight.w800,
-
-                    color: Colors.white,
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    width: r(46),
+                    height: r(46),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(.12),
+                      borderRadius: BorderRadius.circular(r(16)),
+                    ),
+                    child: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: Colors.white,
+                      size: r(20),
+                    ),
                   ),
                 ),
 
-                const Spacer(),
+                SizedBox(height: r(18)),
 
-                Row(
-                  children: [
-                    Container(
-                      height: r(48),
-
-                      width: r(48),
-
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(.14),
-
-                        borderRadius: BorderRadius.circular(r(16)),
-                      ),
-
-                      child: Icon(
-                        Icons.card_giftcard_rounded,
-
-                        color: Colors.white,
-
-                        size: r(25),
-                      ),
-                    ),
-
-                    SizedBox(width: r(14)),
-
-                    Expanded(
-                      child: Text(
-                        "Invite people and earn rewards",
-
-                        style: GoogleFonts.montserrat(
-                          fontSize: r(14),
-
-                          fontWeight: FontWeight.w700,
-
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
+                Text(
+                  "Referral",
+                  style: GoogleFonts.montserrat(
+                    fontSize: r(28),
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
                 ),
               ],
             ),
