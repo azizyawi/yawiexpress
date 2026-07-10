@@ -28,7 +28,7 @@ class _BrandSplashScreenState extends State<BrandSplashScreen>
 
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 5000),
+      duration: const Duration(milliseconds: 3000),
     );
 
     _logoWidthAnimation = Tween<double>(begin: 1, end: 0).animate(

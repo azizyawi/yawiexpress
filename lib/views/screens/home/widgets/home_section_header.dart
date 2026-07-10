@@ -191,63 +191,97 @@ class _HomeHeroSectionState extends State<HomeHeroSection>
 
     return SizedBox(
       height: heroHeight,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: AnimatedBuilder(
-              animation: _pathController,
-              builder: (context, child) {
-                return CustomPaint(
-                  painter: HomeHeroBackgroundPainter(_pathController.value),
-                );
-              },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(0),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: AnimatedBuilder(
+                animation: _pathController,
+                builder: (context, child) {
+                  return CustomPaint(
+                    painter: HomeHeroBackgroundPainter(_pathController.value),
+                  );
+                },
+              ),
             ),
-          ),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                flex: isTablet ? 5 : 6,
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    right: isTablet ? 18 : 8,
-                    top: isLandscape || isShort ? 4 : 0,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: isLandscape || isShort
-                        ? MainAxisAlignment.center
-                        : MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        width: _titleWidth(context),
-                        child: Text(
-                          'Deliver with confidence',
-                          style: sf(
-                            size: _titleSize(context),
-                            weight: FontWeight.w800,
-                            color: Colors.white,
-                            height: 1.06,
-                            letterSpacing: -0.5,
+
+            Positioned(
+              right: isTablet ? 120 : 82,
+              top: isLandscape || isShort ? 18 : 24,
+              child: Icon(
+                Icons.inventory_2_outlined,
+                color: Colors.white.withOpacity(.14),
+                size: isTablet ? 42 : 32,
+              ),
+            ),
+
+            Positioned(
+              right: isTablet ? 220 : 150,
+              bottom: isLandscape || isShort ? 28 : 34,
+              child: Icon(
+                Icons.route_rounded,
+                color: Colors.white.withOpacity(.10),
+                size: isTablet ? 54 : 42,
+              ),
+            ),
+
+            Positioned(
+              left: isTablet ? 280 : 225,
+              top: isLandscape || isShort ? 28 : 36,
+              child: Icon(
+                Icons.add_rounded,
+                color: Colors.white.withOpacity(.18),
+                size: isTablet ? 24 : 20,
+              ),
+            ),
+
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  flex: isTablet ? 5 : 6,
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      right: isTablet ? 18 : 8,
+                      top: isLandscape || isShort ? 4 : 0,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: isLandscape || isShort
+                          ? MainAxisAlignment.center
+                          : MainAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: _titleWidth(context),
+                          child: Text(
+                            'Deliver with confidence',
+                            style: sf(
+                              size: _titleSize(context),
+                              weight: FontWeight.w800,
+                              color: Colors.white,
+                              height: 1.06,
+                              letterSpacing: -0.5,
+                            ),
                           ),
                         ),
-                      ),
-                      SizedBox(height: isLandscape || isShort ? 10 : 14),
-                      _buildCta(context),
-                    ],
+                        SizedBox(height: isLandscape || isShort ? 10 : 14),
+                        _buildCta(context),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              Expanded(
-                flex: isTablet ? 5 : 4,
-                child: const Align(
-                  alignment: Alignment.centerRight,
-                  child: HomeHelmetIllustration(),
+                Expanded(
+                  flex: isTablet ? 5 : 4,
+                  child: const Align(
+                    alignment: Alignment.centerRight,
+                    child: HomeHelmetIllustration(),
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -268,9 +302,8 @@ class _HomeHeroSectionState extends State<HomeHeroSection>
                 offset: Offset(0, _overlayOffset(context)),
                 child: HomeServicesOverlay(
                   onBillsTap: () => widget.onComingSoon('Bills'),
-                  onCardsTap: () => widget.onComingSoon('Cards'),
+                  onFoodTap: () => widget.onComingSoon('Food'),
                   onSendTap: widget.onSendPackage,
-                  onWalletTap: () => widget.onComingSoon('Wallet'),
                 ),
               ),
             ],

@@ -22,7 +22,7 @@ class _AppEntrySplashScreenState extends State<AppEntrySplashScreen>
 
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2200),
+      duration: const Duration(milliseconds: 2000),
     );
 
     _bikeProgress = Tween<double>(

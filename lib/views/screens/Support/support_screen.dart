@@ -106,66 +106,63 @@ class _SupportScreenState extends State<SupportScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(
-        bottom: false,
-        child: Center(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: _maxContentWidth(context)),
-            child: Column(
-              children: [
-                _SupportHeader(onChatTap: () => _openWannyChat(context)),
-                Expanded(
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: EdgeInsets.fromLTRB(r(20), r(18), r(20), r(24)),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Help with a recent delivery',
-                          style: _T.text(
-                            context,
-                            15,
-                            FontWeight.w500,
-                            AppColors.textHint,
-                          ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: _maxContentWidth(context)),
+          child: Column(
+            children: [
+              _SupportHeader(onChatTap: () => _openWannyChat(context)),
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: EdgeInsets.fromLTRB(r(20), r(18), r(20), r(24)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Help with a recent delivery',
+                        style: _T.text(
+                          context,
+                          15,
+                          FontWeight.w500,
+                          AppColors.textHint,
                         ),
-                        SizedBox(height: r(14)),
-                        if (_isLoadingOrder)
-                          Padding(
-                            padding: EdgeInsets.symmetric(vertical: r(18)),
-                            child: const Center(
-                              child: CircularProgressIndicator(
-                                color: AppColors.brandBlueDark,
-                              ),
+                      ),
+                      SizedBox(height: r(14)),
+                      if (_isLoadingOrder)
+                        Padding(
+                          padding: EdgeInsets.symmetric(vertical: r(18)),
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              color: AppColors.brandBlueDark,
                             ),
-                          )
-                        else if (_recentOrder != null)
-                          _RecentOrderCard(order: _recentOrder!)
-                        else
-                          _NoRecentOrderCard(
-                            onTap: () => _openWannyChat(context),
                           ),
-                        SizedBox(height: r(24)),
-                        Divider(color: AppColors.inputBorder, thickness: 1),
-                        SizedBox(height: r(22)),
-                        Text(
-                          'Help with something else',
-                          style: _T.text(
-                            context,
-                            15,
-                            FontWeight.w500,
-                            AppColors.textHint,
-                          ),
+                        )
+                      else if (_recentOrder != null)
+                        _RecentOrderCard(order: _recentOrder!)
+                      else
+                        _NoRecentOrderCard(
+                          onTap: () => _openWannyChat(context),
                         ),
-                        SizedBox(height: r(16)),
-                        _OtherHelpCard(onTap: () => _openWannyChat(context)),
-                      ],
-                    ),
+                      SizedBox(height: r(24)),
+                      Divider(color: AppColors.inputBorder, thickness: 1),
+                      SizedBox(height: r(22)),
+                      Text(
+                        'Help with something else',
+                        style: _T.text(
+                          context,
+                          15,
+                          FontWeight.w500,
+                          AppColors.textHint,
+                        ),
+                      ),
+                      SizedBox(height: r(16)),
+                      _OtherHelpCard(onTap: () => _openWannyChat(context)),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -588,27 +585,231 @@ class _HeaderPatternPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withOpacity(0.08)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3;
+    final width = size.width;
+    final height = size.height;
 
-    final path = Path()
-      ..moveTo(0, size.height * 0.3)
-      ..quadraticBezierTo(
-        size.width * 0.25,
-        0,
-        size.width * 0.5,
-        size.height * 0.2,
+    final softFill = Paint()
+      ..color = Colors.white.withOpacity(0.035)
+      ..style = PaintingStyle.fill;
+
+    final softStroke = Paint()
+      ..color = Colors.white.withOpacity(0.055)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 18
+      ..strokeCap = StrokeCap.round;
+
+    final line = Paint()
+      ..color = Colors.white.withOpacity(0.14)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.8
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    final faintLine = Paint()
+      ..color = Colors.white.withOpacity(0.075)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.4
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    /*
+     * Large soft background shape.
+     * This adds depth without looking like a random icon.
+     */
+    final backgroundShape = Path()
+      ..moveTo(width * 0.48, -height * 0.10)
+      ..cubicTo(
+        width * 0.78,
+        -height * 0.14,
+        width * 1.08,
+        height * 0.04,
+        width * 1.05,
+        height * 0.38,
       )
-      ..quadraticBezierTo(
-        size.width * 0.75,
-        size.height * 0.4,
-        size.width,
-        size.height * 0.1,
+      ..cubicTo(
+        width * 1.02,
+        height * 0.72,
+        width * 0.78,
+        height * 0.77,
+        width * 0.61,
+        height * 0.56,
+      )
+      ..cubicTo(
+        width * 0.45,
+        height * 0.36,
+        width * 0.28,
+        height * 0.06,
+        width * 0.48,
+        -height * 0.10,
+      )
+      ..close();
+
+    canvas.drawPath(backgroundShape, softFill);
+
+    /*
+     * Flowing conversation path.
+     */
+    final conversationPath = Path()
+      ..moveTo(width * 0.38, height * 0.70)
+      ..cubicTo(
+        width * 0.50,
+        height * 0.52,
+        width * 0.63,
+        height * 0.71,
+        width * 0.74,
+        height * 0.55,
+      )
+      ..cubicTo(
+        width * 0.83,
+        height * 0.42,
+        width * 0.90,
+        height * 0.46,
+        width * 1.02,
+        height * 0.33,
       );
 
-    canvas.drawPath(path, paint);
+    canvas.drawPath(conversationPath, softStroke);
+    _drawDashedPath(canvas, conversationPath, line);
+
+    /*
+     * Main double speech-bubble artwork.
+     */
+    _drawLargeChatBubble(
+      canvas,
+      center: Offset(width * 0.77, height * 0.30),
+      bubbleWidth: width * 0.25,
+      bubbleHeight: height * 0.25,
+      paint: line,
+    );
+
+    _drawSmallChatBubble(
+      canvas,
+      center: Offset(width * 0.88, height * 0.53),
+      bubbleWidth: width * 0.16,
+      bubbleHeight: height * 0.17,
+      paint: faintLine,
+    );
+
+    /*
+     * Small conversation dots.
+     */
+    final dotPaint = Paint()..color = Colors.white.withOpacity(0.22);
+
+    canvas.drawCircle(Offset(width * 0.72, height * 0.29), 3.2, dotPaint);
+
+    canvas.drawCircle(Offset(width * 0.77, height * 0.29), 3.2, dotPaint);
+
+    canvas.drawCircle(Offset(width * 0.82, height * 0.29), 3.2, dotPaint);
+
+    /*
+     * Subtle decorative nodes.
+     */
+    _drawNode(canvas, Offset(width * 0.57, height * 0.56), 4);
+
+    _drawNode(canvas, Offset(width * 0.94, height * 0.39), 5);
+
+    _drawPlus(canvas, Offset(width * 0.61, height * 0.20), 6, faintLine);
+  }
+
+  void _drawLargeChatBubble(
+    Canvas canvas, {
+    required Offset center,
+    required double bubbleWidth,
+    required double bubbleHeight,
+    required Paint paint,
+  }) {
+    final left = center.dx - bubbleWidth / 2;
+    final top = center.dy - bubbleHeight / 2;
+
+    final bubble = Path()
+      ..moveTo(left + bubbleWidth * 0.18, top)
+      ..lineTo(left + bubbleWidth * 0.82, top)
+      ..quadraticBezierTo(
+        left + bubbleWidth,
+        top,
+        left + bubbleWidth,
+        top + bubbleHeight * 0.20,
+      )
+      ..lineTo(left + bubbleWidth, top + bubbleHeight * 0.68)
+      ..quadraticBezierTo(
+        left + bubbleWidth,
+        top + bubbleHeight * 0.88,
+        left + bubbleWidth * 0.79,
+        top + bubbleHeight * 0.88,
+      )
+      ..lineTo(left + bubbleWidth * 0.62, top + bubbleHeight * 0.88)
+      ..lineTo(left + bubbleWidth * 0.52, top + bubbleHeight)
+      ..lineTo(left + bubbleWidth * 0.48, top + bubbleHeight * 0.88)
+      ..lineTo(left + bubbleWidth * 0.18, top + bubbleHeight * 0.88)
+      ..quadraticBezierTo(
+        left,
+        top + bubbleHeight * 0.88,
+        left,
+        top + bubbleHeight * 0.68,
+      )
+      ..lineTo(left, top + bubbleHeight * 0.20)
+      ..quadraticBezierTo(left, top, left + bubbleWidth * 0.18, top);
+
+    canvas.drawPath(bubble, paint);
+  }
+
+  void _drawSmallChatBubble(
+    Canvas canvas, {
+    required Offset center,
+    required double bubbleWidth,
+    required double bubbleHeight,
+    required Paint paint,
+  }) {
+    final rect = RRect.fromRectAndRadius(
+      Rect.fromCenter(center: center, width: bubbleWidth, height: bubbleHeight),
+      const Radius.circular(12),
+    );
+
+    canvas.drawRRect(rect, paint);
+
+    final tail = Path()
+      ..moveTo(center.dx + bubbleWidth * 0.17, center.dy + bubbleHeight * 0.48)
+      ..lineTo(center.dx + bubbleWidth * 0.31, center.dy + bubbleHeight * 0.67)
+      ..lineTo(center.dx + bubbleWidth * 0.34, center.dy + bubbleHeight * 0.44);
+
+    canvas.drawPath(tail, paint);
+  }
+
+  void _drawDashedPath(Canvas canvas, Path path, Paint paint) {
+    for (final metric in path.computeMetrics()) {
+      double distance = 0;
+
+      while (distance < metric.length) {
+        final end = (distance + 10).clamp(0.0, metric.length);
+
+        canvas.drawPath(metric.extractPath(distance, end), paint);
+
+        distance += 21;
+      }
+    }
+  }
+
+  void _drawNode(Canvas canvas, Offset center, double radius) {
+    final outerPaint = Paint()..color = Colors.white.withOpacity(0.07);
+
+    final innerPaint = Paint()..color = Colors.white.withOpacity(0.24);
+
+    canvas.drawCircle(center, radius + 7, outerPaint);
+    canvas.drawCircle(center, radius, innerPaint);
+  }
+
+  void _drawPlus(Canvas canvas, Offset center, double size, Paint paint) {
+    canvas.drawLine(
+      Offset(center.dx - size, center.dy),
+      Offset(center.dx + size, center.dy),
+      paint,
+    );
+
+    canvas.drawLine(
+      Offset(center.dx, center.dy - size),
+      Offset(center.dx, center.dy + size),
+      paint,
+    );
   }
 
   @override

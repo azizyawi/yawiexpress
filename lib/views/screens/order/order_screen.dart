@@ -212,26 +212,24 @@ class _OrderScreenState extends State<OrderScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: maxWidth),
-            child: Column(
-              children: [
-                _Header(
-                  selectedTab: selectedTab,
-                  tabs: tabs,
-                  pendingCount: _orders.where(_isPendingOrder).length,
-                  ongoingCount: _orders.where(_isOngoingOrder).length,
-                  completedCount: _orders.where(_isCompletedOrder).length,
-                  onTabChanged: (index) {
-                    HapticFeedback.selectionClick();
-                    setState(() => selectedTab = index);
-                  },
-                ),
-                Expanded(child: _buildBody(orders)),
-              ],
-            ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxWidth),
+          child: Column(
+            children: [
+              _OrdersArtHeader(
+                selectedTab: selectedTab,
+                tabs: tabs,
+                pendingCount: _orders.where(_isPendingOrder).length,
+                ongoingCount: _orders.where(_isOngoingOrder).length,
+                completedCount: _orders.where(_isCompletedOrder).length,
+                onTabChanged: (index) {
+                  HapticFeedback.selectionClick();
+                  setState(() => selectedTab = index);
+                },
+              ),
+              Expanded(child: _buildBody(orders)),
+            ],
           ),
         ),
       ),
@@ -504,169 +502,6 @@ class _OrderScreenState extends State<OrderScreen> {
   String _safeName(String? value, {required String fallback}) {
     if (value == null || value.trim().isEmpty) return fallback;
     return value.trim();
-  }
-}
-
-class _Header extends StatelessWidget {
-  final int selectedTab;
-  final List<String> tabs;
-  final int pendingCount;
-  final int ongoingCount;
-  final int completedCount;
-  final ValueChanged<int> onTabChanged;
-
-  const _Header({
-    required this.selectedTab,
-    required this.tabs,
-    required this.pendingCount,
-    required this.ongoingCount,
-    required this.completedCount,
-    required this.onTabChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final s = _scale(context);
-    double r(double value) => value * s;
-
-    final counts = [pendingCount, ongoingCount, completedCount];
-    final total = pendingCount + ongoingCount + completedCount;
-
-    return Padding(
-      padding: EdgeInsets.fromLTRB(r(20), r(18), r(20), r(8)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Orders',
-                      style: _T.text(
-                        context,
-                        29,
-                        FontWeight.w800,
-                        AppColors.textPrimary,
-                        height: 1.0,
-                      ),
-                    ),
-                    SizedBox(height: r(7)),
-                    Text(
-                      '$total deliveries',
-                      style: _T.text(
-                        context,
-                        13,
-                        FontWeight.w500,
-                        AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: r(11),
-                  vertical: r(7),
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.infoBg,
-                  borderRadius: BorderRadius.circular(r(999)),
-                  border: Border.all(color: AppColors.infoBorder),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: r(6),
-                      height: r(6),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF15803D),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    SizedBox(width: r(7)),
-                    Text(
-                      'Live',
-                      style: _T.text(
-                        context,
-                        11.5,
-                        FontWeight.w700,
-                        AppColors.brandBlueDark,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: r(22)),
-          Container(
-            padding: EdgeInsets.all(r(4)),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(r(16)),
-              border: Border.all(color: AppColors.inputBorder),
-            ),
-            child: Row(
-              children: List.generate(tabs.length, (index) {
-                final isSelected = selectedTab == index;
-
-                return Expanded(
-                  child: GestureDetector(
-                    onTap: () => onTabChanged(index),
-                    behavior: HitTestBehavior.opaque,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      curve: Curves.easeOutCubic,
-                      padding: EdgeInsets.symmetric(vertical: r(11)),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppColors.brandBlueDark
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(r(12)),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              tabs[index],
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: _T.text(
-                                context,
-                                11.5,
-                                FontWeight.w700,
-                                isSelected ? Colors.white : AppColors.label,
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: r(6)),
-                          Text(
-                            counts[index].toString(),
-                            style: _T.text(
-                              context,
-                              11.5,
-                              FontWeight.w800,
-                              isSelected
-                                  ? Colors.white.withOpacity(.86)
-                                  : AppColors.textHint,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
 
@@ -1312,4 +1147,265 @@ class _T {
       letterSpacing: -0.08,
     );
   }
+}
+
+class _OrdersArtHeader extends StatelessWidget {
+  final int selectedTab;
+  final List<String> tabs;
+  final int pendingCount;
+  final int ongoingCount;
+  final int completedCount;
+  final ValueChanged<int> onTabChanged;
+
+  const _OrdersArtHeader({
+    required this.selectedTab,
+    required this.tabs,
+    required this.pendingCount,
+    required this.ongoingCount,
+    required this.completedCount,
+    required this.onTabChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final s = _scale(context);
+    double r(double v) => v * s;
+
+    final counts = [pendingCount, ongoingCount, completedCount];
+    final total = pendingCount + ongoingCount + completedCount;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(r(20), r(18), r(20), r(20)),
+      decoration: const BoxDecoration(color: AppColors.brandBlueDark),
+      child: Stack(
+        children: [
+          const Positioned.fill(
+            child: CustomPaint(painter: _OrdersTopArtPainter()),
+          ),
+
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Orders',
+                          style: _T.text(
+                            context,
+                            29,
+                            FontWeight.w800,
+                            Colors.white,
+                            height: 1,
+                          ),
+                        ),
+                        SizedBox(height: r(7)),
+                        Text(
+                          '$total deliveries',
+                          style: _T.text(
+                            context,
+                            13,
+                            FontWeight.w500,
+                            Colors.white.withOpacity(.72),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: r(11),
+                      vertical: r(7),
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(.12),
+                      borderRadius: BorderRadius.circular(r(999)),
+                      border: Border.all(color: Colors.white.withOpacity(.18)),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: r(6),
+                          height: r(6),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF22C55E),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        SizedBox(width: r(7)),
+                        Text(
+                          'Live',
+                          style: _T.text(
+                            context,
+                            11.5,
+                            FontWeight.w800,
+                            Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              SizedBox(height: r(24)),
+
+              Container(
+                padding: EdgeInsets.all(r(4)),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(r(17)),
+                ),
+                child: Row(
+                  children: List.generate(tabs.length, (index) {
+                    final isSelected = selectedTab == index;
+
+                    return Expanded(
+                      child: GestureDetector(
+                        onTap: () => onTabChanged(index),
+                        behavior: HitTestBehavior.opaque,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          padding: EdgeInsets.symmetric(vertical: r(11)),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppColors.brandBlueDark
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(r(13)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  tabs[index],
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: _T.text(
+                                    context,
+                                    11.5,
+                                    FontWeight.w800,
+                                    isSelected ? Colors.white : AppColors.label,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: r(6)),
+                              Text(
+                                counts[index].toString(),
+                                style: _T.text(
+                                  context,
+                                  11.5,
+                                  FontWeight.w800,
+                                  isSelected
+                                      ? Colors.white.withOpacity(.85)
+                                      : AppColors.textHint,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OrdersTopArtPainter extends CustomPainter {
+  const _OrdersTopArtPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final line = Paint()
+      ..color = Colors.white.withOpacity(.12)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    final soft = Paint()
+      ..color = Colors.white.withOpacity(.055)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 12
+      ..strokeCap = StrokeCap.round;
+
+    final path = Path()
+      ..moveTo(size.width * .40, size.height * .55)
+      ..cubicTo(
+        size.width * .55,
+        size.height * .30,
+        size.width * .70,
+        size.height * .72,
+        size.width * .94,
+        size.height * .42,
+      );
+
+    canvas.drawPath(path, soft);
+    _drawDashed(canvas, path, line);
+
+    _drawBox(canvas, Offset(size.width * .78, size.height * .25), line);
+    _drawPin(canvas, Offset(size.width * .90, size.height * .62), line);
+    _drawBike(canvas, Offset(size.width * .52, size.height * .78), line);
+
+    final dot = Paint()..color = Colors.white.withOpacity(.16);
+    canvas.drawCircle(Offset(size.width * .66, size.height * .32), 4, dot);
+    canvas.drawCircle(Offset(size.width * .94, size.height * .28), 5, dot);
+  }
+
+  void _drawDashed(Canvas canvas, Path path, Paint paint) {
+    for (final metric in path.computeMetrics()) {
+      double distance = 0;
+      while (distance < metric.length) {
+        final end = (distance + 9).clamp(0.0, metric.length);
+        canvas.drawPath(metric.extractPath(distance, end), paint);
+        distance += 18;
+      }
+    }
+  }
+
+  void _drawBox(Canvas canvas, Offset c, Paint p) {
+    final rect = RRect.fromRectAndRadius(
+      Rect.fromCenter(center: c, width: 42, height: 34),
+      const Radius.circular(7),
+    );
+    canvas.drawRRect(rect, p);
+    canvas.drawLine(
+      Offset(c.dx - 21, c.dy - 6),
+      Offset(c.dx + 21, c.dy - 6),
+      p,
+    );
+    canvas.drawLine(Offset(c.dx, c.dy - 17), Offset(c.dx, c.dy + 17), p);
+  }
+
+  void _drawPin(Canvas canvas, Offset c, Paint p) {
+    final path = Path()
+      ..moveTo(c.dx, c.dy + 16)
+      ..cubicTo(c.dx - 14, c.dy, c.dx - 10, c.dy - 18, c.dx, c.dy - 18)
+      ..cubicTo(c.dx + 10, c.dy - 18, c.dx + 14, c.dy, c.dx, c.dy + 16);
+    canvas.drawPath(path, p);
+    canvas.drawCircle(Offset(c.dx, c.dy - 5), 4, p);
+  }
+
+  void _drawBike(Canvas canvas, Offset c, Paint p) {
+    canvas.drawCircle(c, 9, p);
+    canvas.drawCircle(c.translate(40, 0), 9, p);
+    canvas.drawLine(c, c.translate(18, -17), p);
+    canvas.drawLine(c.translate(18, -17), c.translate(40, 0), p);
+    canvas.drawLine(c.translate(18, -17), c.translate(33, -22), p);
+    canvas.drawLine(c.translate(33, -22), c.translate(47, -16), p);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

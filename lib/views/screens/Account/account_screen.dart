@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import 'package:wanmac/core/theme/app_colors.dart';
 import 'package:wanmac/views/screens/FAQ/faq_screen.dart';
 import 'package:wanmac/views/screens/profile_detail/profile_detail_screen.dart';
@@ -22,9 +23,10 @@ double _scale(BuildContext context) {
 
 double _maxContentWidth(BuildContext context) {
   final size = MediaQuery.sizeOf(context);
-  final isTablet = size.shortestSide >= 600;
 
-  if (isTablet) return 680;
+  if (size.shortestSide >= 600) {
+    return 680;
+  }
 
   return double.infinity;
 }
@@ -49,6 +51,8 @@ class _AccountScreenState extends State<AccountScreen> {
   Future<void> _loadUser() async {
     final prefs = await SharedPreferences.getInstance();
 
+    if (!mounted) return;
+
     setState(() {
       firstName = prefs.getString('firstName') ?? '';
       lastName = prefs.getString('lastName') ?? '';
@@ -56,345 +60,510 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   String get fullName {
-    if (firstName.isEmpty && lastName.isEmpty) return 'User';
-    return '$firstName $lastName'.trim();
+    if (firstName.isEmpty && lastName.isEmpty) {
+      return "User";
+    }
+
+    return "$firstName $lastName".trim();
   }
 
   Future<void> _openPrivacyPolicy() async {
-    final Uri url = Uri.parse('https://www.wanpadi.com/privacy');
+    final url = Uri.parse("https://www.wanpadi.com/privacy");
 
-    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-      throw 'Could not launch $url';
-    }
+    await launchUrl(url, mode: LaunchMode.externalApplication);
   }
 
   @override
   Widget build(BuildContext context) {
     final s = _scale(context);
+
     double r(double value) => value * s;
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: _maxContentWidth(context)),
-            child: ListView(
-              padding: EdgeInsets.symmetric(horizontal: r(20), vertical: r(12)),
-              children: [
-                _buildTopBar(),
-                SizedBox(height: r(20)),
-                _buildProfileCard(),
-                SizedBox(height: r(24)),
 
-                _buildFlatSectionHeader("Personal"),
-                _buildFlatListTile(
-                  icon: Icons.person_outline_rounded,
-                  title: "Profile Details",
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const ProfileDetailsScreen(),
-                      ),
-                    );
-                  },
-                ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: _maxContentWidth(context)),
 
-                _buildFlatListTile(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) {
-                          return const ReferralScreen();
-                        },
-                      ),
-                    );
-                  },
-                  icon: Icons.people_outline,
-                  title: "Referral Program",
-                  showDivider: false,
-                ),
+          child: ListView(
+            padding: EdgeInsets.only(bottom: r(30)),
 
-                SizedBox(height: r(18)),
-
-                _buildFlatSectionHeader("Explore"),
-                _buildFlatListTile(
-                  icon: Icons.help_outline_rounded,
-                  title: "FAQs",
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const FAQScreen(),
-                      ),
-                    );
-                  },
-                ),
-                _buildFlatListTile(
-                  onTap: _openPrivacyPolicy,
-                  icon: Icons.privacy_tip_outlined,
-                  title: "Privacy Policy",
-                ),
-                _buildFlatListTile(
-                  icon: Icons.description_outlined,
-                  title: "Terms of Use",
-                  showDivider: false,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const TermsScreen(),
-                      ),
-                    );
-                  },
-                ),
-
-                SizedBox(height: r(24)),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTopBar() {
-    final s = _scale(context);
-    double r(double value) => value * s;
-
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            "Account",
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.montserrat(
-              fontSize: r(26),
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-              letterSpacing: -0.4,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildProfileCard() {
-    final s = _scale(context);
-    double r(double value) => value * s;
-
-    return Container(
-      padding: EdgeInsets.all(r(18)),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(r(28)),
-        border: Border.all(color: AppColors.inputBorder),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(r(22)),
-                child: SizedBox(
-                  height: r(84),
-                  width: r(84),
-                  child: Image.asset(
-                    "assets/images/profile_avata.png",
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-              SizedBox(width: r(14)),
-              Expanded(
+              _AccountHeader(name: fullName),
+
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: r(20)),
+
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+
                   children: [
-                    Text(
-                      fullName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.montserrat(
-                        fontSize: r(18),
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
-                        letterSpacing: -0.2,
-                      ),
+                    SizedBox(height: r(24)),
+
+                    _sectionTitle(context, "Personal"),
+
+                    _AccountTile(
+                      icon: Icons.person_outline_rounded,
+                      title: "Profile Details",
+
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ProfileDetailsScreen(),
+                          ),
+                        );
+                      },
                     ),
-                    SizedBox(height: r(6)),
-                    Text(
-                      "Premium account",
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.montserrat(
-                        fontSize: r(12),
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.textSecondary,
-                      ),
+
+                    _AccountTile(
+                      icon: Icons.people_outline_rounded,
+                      title: "Referral Program",
+
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ReferralScreen(),
+                          ),
+                        );
+                      },
                     ),
-                    SizedBox(height: r(10)),
-                    Wrap(
-                      spacing: r(8),
-                      runSpacing: r(8),
-                      children: [
-                        _infoChip(
-                          icon: Icons.verified_outlined,
-                          label: "Verified",
-                          bgColor: AppColors.infoBg,
-                          textColor: AppColors.brandBlueDark,
-                          iconColor: AppColors.brandBlueDark,
-                        ),
-                        _infoChip(
-                          icon: Icons.star_rounded,
-                          label: "5.0 Rating",
-                          bgColor: AppColors.brandBlueDark,
-                          textColor: Colors.white,
-                          iconColor: Colors.white,
-                        ),
-                      ],
+
+                    SizedBox(height: r(22)),
+
+                    _sectionTitle(context, "Explore"),
+
+                    _AccountTile(
+                      icon: Icons.help_outline_rounded,
+                      title: "FAQs",
+
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const FAQScreen()),
+                        );
+                      },
+                    ),
+
+                    _AccountTile(
+                      icon: Icons.privacy_tip_outlined,
+                      title: "Privacy Policy",
+
+                      onTap: _openPrivacyPolicy,
+                    ),
+
+                    _AccountTile(
+                      icon: Icons.description_outlined,
+                      title: "Terms of Use",
+
+                      showDivider: false,
+
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const TermsScreen(),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
               ),
             ],
           ),
-          SizedBox(height: r(18)),
-          // Container(
-          //   width: double.infinity,
-          //   padding: EdgeInsets.symmetric(horizontal: r(14), vertical: r(14)),
-          //   decoration: BoxDecoration(
-          //     borderRadius: BorderRadius.circular(r(20)),
-          //     color: AppColors.brandBlueDark,
-          //   ),
-          //   child: Row(
-          //     children: [
-          //       Expanded(
-          //         child: Text(
-          //           "9733962811  |  Paystack-Titan",
-          //           overflow: TextOverflow.ellipsis,
-          //           style: GoogleFonts.montserrat(
-          //             color: Colors.white,
-          //             fontSize: r(13),
-          //             fontWeight: FontWeight.w600,
-          //           ),
-          //         ),
-          //       ),
-          //       SizedBox(width: r(10)),
-          //       Container(
-          //         padding: EdgeInsets.all(r(8)),
-          //         decoration: BoxDecoration(
-          //           color: Colors.white.withOpacity(0.14),
-          //           borderRadius: BorderRadius.circular(r(12)),
-          //         ),
-          //         child: Icon(
-          //           Icons.copy_rounded,
-          //           color: Colors.white,
-          //           size: r(16),
-          //         ),
-          //       ),
-          //     ],
-          //   ),
-          // ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFlatSectionHeader(String title) {
-    final s = _scale(context);
-    double r(double value) => value * s;
-
-    return Container(
-      margin: EdgeInsets.only(bottom: r(2)),
-      padding: EdgeInsets.symmetric(horizontal: r(16), vertical: r(16)),
-      decoration: BoxDecoration(
-        color: AppColors.inputFill,
-        borderRadius: BorderRadius.circular(r(18)),
-      ),
-      child: Text(
-        title,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: GoogleFonts.montserrat(
-          fontSize: r(16),
-          fontWeight: FontWeight.w700,
-          color: AppColors.textPrimary,
         ),
       ),
     );
   }
 
-  Widget _buildFlatListTile({
-    required IconData icon,
-    required String title,
-    Widget? trailing,
-    bool showDivider = true,
-    VoidCallback? onTap,
-  }) {
+  Widget _sectionTitle(BuildContext context, String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+
+      child: Text(
+        title,
+
+        style: _T.text(context, 15, FontWeight.w700, AppColors.textSecondary),
+      ),
+    );
+  }
+}
+
+class _AccountHeader extends StatelessWidget {
+  final String name;
+
+  const _AccountHeader({required this.name});
+
+  @override
+  Widget build(BuildContext context) {
     final s = _scale(context);
     double r(double value) => value * s;
 
+    return SizedBox(
+      height: r(220),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: Container(
+              decoration: const BoxDecoration(color: AppColors.brandBlueDark),
+              child: CustomPaint(painter: _AccountHeaderPainter()),
+            ),
+          ),
+
+          Padding(
+            padding: EdgeInsets.fromLTRB(r(20), r(32), r(20), r(20)),
+
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+
+              children: [
+                Text(
+                  "Account",
+                  style: _T.text(context, 28, FontWeight.w800, Colors.white),
+                ),
+
+                const Spacer(),
+
+                Row(
+                  children: [
+                    Container(
+                      width: r(86),
+                      height: r(86),
+
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+
+                        border: Border.all(
+                          color: Colors.white.withOpacity(.9),
+                          width: 3,
+                        ),
+
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(.15),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+
+                      child: ClipOval(
+                        child: Image.asset(
+                          "assets/images/profile_avata.png",
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+
+                    SizedBox(width: r(16)),
+
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+
+                        children: [
+                          Text(
+                            name,
+
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+
+                            style: _T.text(
+                              context,
+                              20,
+                              FontWeight.w800,
+                              Colors.white,
+                            ),
+                          ),
+
+                          SizedBox(height: r(8)),
+
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: r(12),
+                              vertical: r(6),
+                            ),
+
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(.14),
+
+                              borderRadius: BorderRadius.circular(50),
+
+                              border: Border.all(
+                                color: Colors.white.withOpacity(.18),
+                              ),
+                            ),
+
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+
+                              children: [
+                                Icon(
+                                  Icons.verified_rounded,
+                                  size: r(13),
+                                  color: Colors.white,
+                                ),
+
+                                SizedBox(width: r(5)),
+
+                                Text(
+                                  "Verified customer",
+
+                                  style: _T.text(
+                                    context,
+                                    11,
+                                    FontWeight.w700,
+                                    Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AccountHeaderPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final width = size.width;
+    final height = size.height;
+
+    final soft = Paint()
+      ..color = Colors.white.withOpacity(.12)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 24
+      ..strokeCap = StrokeCap.round;
+
+    final line = Paint()
+      ..color = Colors.white.withOpacity(.22)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round;
+
+    final faint = Paint()
+      ..color = Colors.white.withOpacity(.14)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+
+    // large abstract wave
+
+    final wave = Path()
+      ..moveTo(width * .28, height * .88)
+      ..cubicTo(
+        width * .42,
+        height * .45,
+
+        width * .72,
+        height * .85,
+
+        width * 1.05,
+        height * .30,
+      );
+
+    canvas.drawPath(wave, soft);
+
+    _drawDashed(canvas, wave, line);
+
+    // abstract floating account card
+
+    final card = RRect.fromRectAndRadius(
+      Rect.fromLTWH(width * .68, height * .20, width * .25, height * .32),
+
+      const Radius.circular(18),
+    );
+
+    canvas.drawRRect(card, faint);
+
+    // small lines inside card
+
+    canvas.drawLine(
+      Offset(width * .72, height * .30),
+
+      Offset(width * .86, height * .30),
+
+      faint,
+    );
+
+    canvas.drawLine(
+      Offset(width * .72, height * .37),
+
+      Offset(width * .90, height * .37),
+
+      faint,
+    );
+
+    // route nodes
+
+    _node(canvas, Offset(width * .40, height * .70));
+
+    _node(canvas, Offset(width * .75, height * .53));
+
+    _node(canvas, Offset(width * .92, height * .36));
+
+    // small plus
+
+    canvas.drawLine(
+      Offset(width * .55, height * .25),
+      Offset(width * .55, height * .35),
+      line,
+    );
+
+    canvas.drawLine(
+      Offset(width * .50, height * .30),
+      Offset(width * .60, height * .30),
+      line,
+    );
+
+    // background circle
+
+    final circle = Paint()
+      ..color = Colors.white.withOpacity(.035)
+      ..style = PaintingStyle.fill;
+
+    canvas.drawCircle(Offset(width * .88, height * .15), width * .18, circle);
+  }
+
+  void _drawDashed(Canvas canvas, Path path, Paint paint) {
+    for (final metric in path.computeMetrics()) {
+      double distance = 0;
+
+      while (distance < metric.length) {
+        final end = (distance + 12).clamp(0.0, metric.length);
+
+        canvas.drawPath(metric.extractPath(distance, end), paint);
+
+        distance += 24;
+      }
+    }
+  }
+
+  void _node(Canvas canvas, Offset center) {
+    final outer = Paint()..color = Colors.white.withOpacity(.08);
+
+    final inner = Paint()..color = Colors.white.withOpacity(.25);
+
+    canvas.drawCircle(center, 10, outer);
+
+    canvas.drawCircle(center, 4, inner);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _AccountTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final VoidCallback? onTap;
+  final bool showDivider;
+
+  const _AccountTile({
+    required this.icon,
+    required this.title,
+    this.onTap,
+    this.showDivider = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final s = _scale(context);
+
+    double r(double value) => value * s;
+
     return Container(
-      color: AppColors.surface,
+      margin: EdgeInsets.only(bottom: r(2)),
+
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+
+        borderRadius: BorderRadius.circular(r(16)),
+      ),
+
       child: Column(
         children: [
           InkWell(
+            borderRadius: BorderRadius.circular(r(16)),
+
             onTap: onTap,
-            borderRadius: BorderRadius.circular(0),
+
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: r(8), vertical: r(18)),
+              padding: EdgeInsets.symmetric(horizontal: r(14), vertical: r(16)),
+
               child: Row(
                 children: [
                   Container(
-                    height: r(40),
-                    width: r(40),
-                    alignment: Alignment.center,
+                    width: r(42),
+
+                    height: r(42),
+
+                    decoration: BoxDecoration(
+                      color: AppColors.inputFill,
+
+                      borderRadius: BorderRadius.circular(r(13)),
+                    ),
+
                     child: Icon(
                       icon,
+
                       size: r(22),
-                      color: AppColors.textPrimary,
+
+                      color: AppColors.brandBlueDark,
                     ),
                   ),
-                  SizedBox(width: r(12)),
+
+                  SizedBox(width: r(14)),
+
                   Expanded(
                     child: Text(
                       title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.montserrat(
-                        fontSize: r(15),
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+
+                      style: _T.text(
+                        context,
+
+                        15,
+
+                        FontWeight.w600,
+
+                        AppColors.textPrimary,
                       ),
                     ),
                   ),
-                  if (trailing != null) ...[trailing, SizedBox(width: r(10))],
+
                   Icon(
                     Icons.chevron_right_rounded,
-                    color: AppColors.textHint,
+
                     size: r(22),
+
+                    color: AppColors.textHint,
                   ),
                 ],
               ),
             ),
           ),
+
           if (showDivider)
             Padding(
-              padding: EdgeInsets.only(left: r(60)),
+              padding: EdgeInsets.only(left: r(70)),
+
               child: Divider(
                 height: 1,
+
                 thickness: 1,
+
                 color: AppColors.inputBorder,
               ),
             ),
@@ -402,62 +571,30 @@ class _AccountScreenState extends State<AccountScreen> {
       ),
     );
   }
+}
 
-  // Widget _countBadge(String text) {
-  //   final s = _scale(context);
-  //   double r(double value) => value * s;
-  //
-  //   return Container(
-  //     padding: EdgeInsets.symmetric(horizontal: r(12), vertical: r(6)),
-  //     decoration: BoxDecoration(
-  //       color: AppColors.surface,
-  //       borderRadius: BorderRadius.circular(r(999)),
-  //       border: Border.all(color: AppColors.infoBorder),
-  //     ),
-  //     child: Text(
-  //       text,
-  //       style: GoogleFonts.montserrat(
-  //         color: AppColors.brandBlueDark,
-  //         fontSize: r(11),
-  //         fontWeight: FontWeight.w700,
-  //       ),
-  //     ),
-  //   );
-  // }
+class _T {
+  static TextStyle text(
+    BuildContext context,
 
-  Widget _infoChip({
-    required IconData icon,
-    required String label,
-    required Color bgColor,
-    required Color textColor,
-    required Color iconColor,
+    double size,
+
+    FontWeight weight,
+
+    Color color, {
+
+    double? height,
   }) {
-    final s = _scale(context);
-    double r(double value) => value * s;
+    return GoogleFonts.montserrat(
+      fontSize: size * _scale(context),
 
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: r(10), vertical: r(8)),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(r(999)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: r(14), color: iconColor),
-          SizedBox(width: r(6)),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.montserrat(
-              fontSize: r(11),
-              fontWeight: FontWeight.w700,
-              color: textColor,
-            ),
-          ),
-        ],
-      ),
+      fontWeight: weight,
+
+      color: color,
+
+      height: height,
+
+      letterSpacing: -0.08,
     );
   }
 }

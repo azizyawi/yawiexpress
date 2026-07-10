@@ -4,16 +4,14 @@ import 'package:wanmac/core/theme/app_colors.dart';
 
 class HomeServicesOverlay extends StatelessWidget {
   final VoidCallback onSendTap;
-  final VoidCallback onWalletTap;
+  final VoidCallback onFoodTap;
   final VoidCallback onBillsTap;
-  final VoidCallback onCardsTap;
 
   const HomeServicesOverlay({
     super.key,
     required this.onSendTap,
-    required this.onWalletTap,
+    required this.onFoodTap,
     required this.onBillsTap,
-    required this.onCardsTap,
   });
 
   bool _isTablet(BuildContext context) {
@@ -115,24 +113,24 @@ class HomeServicesOverlay extends StatelessWidget {
           Expanded(
             child: _serviceCard(
               context: context,
-              icon: Icons.receipt_long_rounded,
-              label: 'Bills',
-              iconColor: const Color(0xFF0F766E),
-              iconBg: const Color(0xFF0F766E).withOpacity(0.10),
+              icon: Icons.restaurant_rounded,
+              label: 'Food',
+              iconColor: const Color(0xFFEA580C),
+              iconBg: const Color(0xFFEA580C).withOpacity(0.10),
               isSoon: true,
-              onTap: onBillsTap,
+              onTap: onFoodTap,
             ),
           ),
           SizedBox(width: isTablet ? 12 : 10),
           Expanded(
             child: _serviceCard(
               context: context,
-              icon: Icons.credit_card_rounded,
-              label: 'Cards',
-              iconColor: const Color(0xFFB45309),
-              iconBg: const Color(0xFFB45309).withOpacity(0.10),
+              icon: Icons.receipt_long_rounded,
+              label: 'Bills',
+              iconColor: const Color(0xFF0F766E),
+              iconBg: const Color(0xFF0F766E).withOpacity(0.10),
               isSoon: true,
-              onTap: onCardsTap,
+              onTap: onBillsTap,
             ),
           ),
         ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:wanmac/core/theme/app_colors.dart';
 
 class HomeHeroBackgroundPainter extends CustomPainter {
   final double progress;
@@ -7,90 +8,234 @@ class HomeHeroBackgroundPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final isCompact = size.height < 160;
-    final scale = isCompact ? 0.82 : 1.0;
+    final scale = size.height < 160 ? 0.82 : 1.0;
+    final brand = AppColors.brandBlueDark;
 
-    final softLine = Paint()
-      ..color = Colors.white.withOpacity(0.045)
+    canvas.drawRect(Offset.zero & size, Paint()..color = brand);
+
+    final glowPaint = Paint()
+      ..color = Colors.white.withOpacity(.045)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 12 * scale
+      ..strokeWidth = 18 * scale
       ..strokeCap = StrokeCap.round;
 
-    final dashed = Paint()
-      ..color = Colors.white.withOpacity(0.28)
+    final routePaint = Paint()
+      ..color = Colors.white.withOpacity(.26)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2 * scale
+      ..strokeWidth = 2.2 * scale
       ..strokeCap = StrokeCap.round;
 
-    final p1 = Path()
-      ..moveTo(-20, size.height * .72)
-      ..quadraticBezierTo(
-        size.width * .28,
-        size.height * .58,
-        size.width * .50,
-        size.height * .68,
-      )
-      ..quadraticBezierTo(
-        size.width * .72,
-        size.height * .78,
-        size.width + 20,
-        size.height * .56,
-      );
+    final artPaint = Paint()
+      ..color = Colors.white.withOpacity(.16)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.1 * scale
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
 
-    final p2 = Path()
-      ..moveTo(size.width * .24, size.height * .42)
-      ..quadraticBezierTo(
-        size.width * .42,
-        size.height * .32,
-        size.width * .58,
-        size.height * .40,
-      )
-      ..quadraticBezierTo(
-        size.width * .70,
+    final softFill = Paint()
+      ..color = Colors.white.withOpacity(.055)
+      ..style = PaintingStyle.fill;
+
+    final route = Path()
+      ..moveTo(size.width * .23, size.height * .63)
+      ..cubicTo(
+        size.width * .38,
         size.height * .46,
-        size.width * .82,
-        size.height * .36,
+        size.width * .55,
+        size.height * .70,
+        size.width * .73,
+        size.height * .52,
+      )
+      ..cubicTo(
+        size.width * .80,
+        size.height * .45,
+        size.width * .85,
+        size.height * .43,
+        size.width * .91,
+        size.height * .47,
       );
 
-    canvas.drawPath(p1, softLine);
-    _drawAnimatedDashedPath(canvas, p2, dashed, scale);
+    canvas.drawPath(route, glowPaint);
+    _drawAnimatedDashedPath(canvas, route, routePaint, scale);
 
-    final dotPaint = Paint()..color = Colors.white.withOpacity(0.7);
-
-    canvas.drawCircle(
-      Offset(size.width * .72, size.height * .33),
-      4 * scale,
-      dotPaint,
-    );
-    canvas.drawCircle(
-      Offset(size.width * .58, size.height * .58),
-      4 * scale,
-      dotPaint,
-    );
-    canvas.drawCircle(
-      Offset(size.width * .24, size.height * .77),
-      4 * scale,
-      dotPaint,
+    _drawLocationPin(
+      canvas,
+      Offset(size.width * .23, size.height * .60),
+      scale,
+      artPaint,
+      softFill,
     );
 
-    final accentPaint = Paint()
-      ..color = const Color(0xFFFFD166).withOpacity(0.65)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5 * scale
+    _drawPackage(
+      canvas,
+      Offset(size.width * .70, size.height * .34),
+      scale,
+      artPaint,
+      softFill,
+    );
+
+    _drawMiniBike(
+      canvas,
+      Offset(size.width * .20, size.height * .80),
+      scale,
+      artPaint,
+    );
+
+    _drawHelmetShadow(
+      canvas,
+      Offset(size.width * .82, size.height * .78),
+      scale,
+    );
+
+    _drawSoftCircle(
+      canvas,
+      Offset(size.width * .86, size.height * .34),
+      5 * scale,
+      Colors.white.withOpacity(.18),
+    );
+
+    _drawPlus(
+      canvas,
+      Offset(size.width * .62, size.height * .30),
+      7 * scale,
+      Colors.white.withOpacity(.18),
+      scale,
+    );
+  }
+
+  void _drawPackage(
+    Canvas canvas,
+    Offset center,
+    double scale,
+    Paint stroke,
+    Paint fill,
+  ) {
+    final w = 38 * scale;
+    final h = 32 * scale;
+
+    final rect = RRect.fromRectAndRadius(
+      Rect.fromCenter(center: center, width: w, height: h),
+      Radius.circular(7 * scale),
+    );
+
+    canvas.drawRRect(rect, fill);
+    canvas.drawRRect(rect, stroke);
+
+    canvas.drawLine(
+      Offset(center.dx - w * .48, center.dy - h * .12),
+      Offset(center.dx + w * .48, center.dy - h * .12),
+      stroke,
+    );
+
+    canvas.drawLine(
+      Offset(center.dx, center.dy - h * .48),
+      Offset(center.dx, center.dy + h * .48),
+      stroke,
+    );
+  }
+
+  void _drawLocationPin(
+    Canvas canvas,
+    Offset center,
+    double scale,
+    Paint stroke,
+    Paint fill,
+  ) {
+    final path = Path()
+      ..moveTo(center.dx, center.dy + 18 * scale)
+      ..cubicTo(
+        center.dx - 15 * scale,
+        center.dy + 2 * scale,
+        center.dx - 12 * scale,
+        center.dy - 18 * scale,
+        center.dx,
+        center.dy - 18 * scale,
+      )
+      ..cubicTo(
+        center.dx + 12 * scale,
+        center.dy - 18 * scale,
+        center.dx + 15 * scale,
+        center.dy + 2 * scale,
+        center.dx,
+        center.dy + 18 * scale,
+      )
+      ..close();
+
+    canvas.drawPath(path, fill);
+    canvas.drawPath(path, stroke);
+    canvas.drawCircle(center.translate(0, -5 * scale), 4 * scale, stroke);
+  }
+
+  void _drawMiniBike(Canvas canvas, Offset center, double scale, Paint paint) {
+    final wheel = 10 * scale;
+
+    canvas.drawCircle(center, wheel, paint);
+    canvas.drawCircle(center.translate(44 * scale, 0), wheel, paint);
+
+    canvas.drawLine(center, center.translate(18 * scale, -18 * scale), paint);
+    canvas.drawLine(
+      center.translate(18 * scale, -18 * scale),
+      center.translate(44 * scale, 0),
+      paint,
+    );
+    canvas.drawLine(
+      center.translate(18 * scale, -18 * scale),
+      center.translate(34 * scale, -22 * scale),
+      paint,
+    );
+    canvas.drawLine(
+      center.translate(34 * scale, -22 * scale),
+      center.translate(48 * scale, -17 * scale),
+      paint,
+    );
+  }
+
+  void _drawHelmetShadow(Canvas canvas, Offset center, double scale) {
+    final paint = Paint()
+      ..color = Colors.black.withOpacity(.10)
+      ..style = PaintingStyle.fill;
+
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(center: center, width: 78 * scale, height: 11 * scale),
+        Radius.circular(20 * scale),
+      ),
+      paint,
+    );
+  }
+
+  void _drawPlus(
+    Canvas canvas,
+    Offset center,
+    double size,
+    Color color,
+    double scale,
+  ) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.7 * scale
       ..strokeCap = StrokeCap.round;
 
-    _drawSpark(
-      canvas,
-      Offset(size.width * .70, size.height * .18),
-      6 * scale,
-      accentPaint,
+    canvas.drawLine(
+      Offset(center.dx - size, center.dy),
+      Offset(center.dx + size, center.dy),
+      paint,
     );
-    _drawSpark(
-      canvas,
-      Offset(size.width * .78, size.height * .23),
-      4 * scale,
-      accentPaint,
+
+    canvas.drawLine(
+      Offset(center.dx, center.dy - size),
+      Offset(center.dx, center.dy + size),
+      paint,
     );
+  }
+
+  void _drawSoftCircle(
+    Canvas canvas,
+    Offset center,
+    double radius,
+    Color color,
+  ) {
+    canvas.drawCircle(center, radius, Paint()..color = color);
   }
 
   void _drawAnimatedDashedPath(
@@ -99,7 +244,7 @@ class HomeHeroBackgroundPainter extends CustomPainter {
     Paint paint,
     double scale,
   ) {
-    final dashWidth = 8.0 * scale;
+    final dashWidth = 9.0 * scale;
     final dashSpace = 8.0 * scale;
     final cycle = dashWidth + dashSpace;
     final dashOffset = progress * cycle;
@@ -118,20 +263,6 @@ class HomeHeroBackgroundPainter extends CustomPainter {
         distance += cycle;
       }
     }
-  }
-
-  void _drawSpark(Canvas canvas, Offset center, double size, Paint paint) {
-    canvas.drawLine(
-      Offset(center.dx - size, center.dy),
-      Offset(center.dx + size, center.dy),
-      paint,
-    );
-
-    canvas.drawLine(
-      Offset(center.dx, center.dy - size),
-      Offset(center.dx, center.dy + size),
-      paint,
-    );
   }
 
   @override

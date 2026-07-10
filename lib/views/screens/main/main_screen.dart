@@ -155,17 +155,15 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                     context: context,
                     index: 0,
                     label: 'Home',
-                    icon: _assetIcon(
-                      context,
-                      'assets/icons/home.png',
-                      _navInactive,
-                      size: 24,
+                    icon: Icon(
+                      Icons.grid_view_rounded,
+                      size: 24 * scale,
+                      color: _navInactive,
                     ),
-                    activeIcon: _assetIcon(
-                      context,
-                      'assets/icons/home.png',
-                      _navActive,
-                      size: 25,
+                    activeIcon: Icon(
+                      Icons.grid_view_rounded,
+                      size: 25 * scale,
+                      color: _navActive,
                     ),
                   ),
                   _navItem(

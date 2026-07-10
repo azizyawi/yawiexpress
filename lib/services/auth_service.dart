@@ -195,9 +195,25 @@ class AuthService {
     return updatedPrefs.getString('idToken');
   }
 
-  static Future<bool> hasValidSession() async {
-    final token = await getValidIdToken();
-    return token != null && token.isNotEmpty;
+ static Future<bool> hasValidSession() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final idToken = prefs.getString('idToken');
+    final expiryString = prefs.getString('tokenExpiry');
+
+    if (idToken == null || idToken.isEmpty || expiryString == null) {
+      return false;
+    }
+
+    final expiry = DateTime.tryParse(expiryString);
+
+    if (expiry == null) {
+      return false;
+    }
+
+    // Just check if the token has not expired.
+    // Do NOT refresh the session here.
+    return DateTime.now().isBefore(expiry);
   }
 
   static Future<void> startSavedSessionWatcher() async {
