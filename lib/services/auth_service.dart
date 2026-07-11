@@ -15,20 +15,23 @@ class AuthService {
   static Timer? _sessionRefreshTimer;
   static Timer? _refreshTokenExpiryTimer;
 
+  static bool _isRefreshingSession = false;
+
   static const Duration _tokenRefreshBuffer = Duration(minutes: 5);
+  static const Duration _refreshTokenDuration = Duration(days: 30);
 
   static Future<Map<String, dynamic>> signUp(SignUpRequest request) async {
-    return await AuthController.signUp(request);
+    return AuthController.signUp(request);
   }
 
   static Future<Map<String, dynamic>> resendOtp(String phoneNumber) async {
-    return await AuthController.resendOtp(phoneNumber);
+    return AuthController.resendOtp(phoneNumber);
   }
 
   static Future<Map<String, dynamic>> signInStart(
     SignInStartRequest request,
   ) async {
-    return await AuthController.signInStart(request);
+    return AuthController.signInStart(request);
   }
 
   static Future<Map<String, dynamic>> verifySignupOtpAndSaveUser(
@@ -36,7 +39,9 @@ class AuthService {
   ) async {
     final result = await AuthController.verifyOtp(request);
 
-    if (result['success'] != true) return result;
+    if (result['success'] != true) {
+      return result;
+    }
 
     final accessToken = (result['accessToken'] ?? '').toString();
     final idToken = (result['idToken'] ?? '').toString();
@@ -49,24 +54,44 @@ class AuthService {
       };
     }
 
-    await _saveTokens(
-      accessToken: accessToken,
-      idToken: idToken,
-      refreshToken: refreshToken,
-      isFreshLogin: true,
-    );
+    try {
+      await _saveTokens(
+        accessToken: accessToken,
+        idToken: idToken,
+        refreshToken: refreshToken,
+        isFreshLogin: true,
+      );
+    } catch (error) {
+      return {
+        'success': false,
+        'message': 'Failed to save authentication session',
+      };
+    }
 
     final userResult = await AuthController.getUserDetails(idToken);
 
     if (userResult['success'] != true) {
       await logout(navigateToSplash: false);
+
       return {
         'success': false,
         'message': userResult['message'] ?? 'Failed to fetch user details',
       };
     }
 
-    final user = userResult['user'] as Map<String, dynamic>;
+    final rawUser = userResult['user'];
+
+    if (rawUser is! Map) {
+      await logout(navigateToSplash: false);
+
+      return {
+        'success': false,
+        'message': 'Invalid user details returned from server',
+      };
+    }
+
+    final user = Map<String, dynamic>.from(rawUser);
+
     await _saveUserToPrefs(user);
 
     return {
@@ -81,7 +106,9 @@ class AuthService {
   ) async {
     final result = await AuthController.signInVerify(request);
 
-    if (result['success'] != true) return result;
+    if (result['success'] != true) {
+      return result;
+    }
 
     final accessToken = (result['accessToken'] ?? '').toString();
     final idToken = (result['idToken'] ?? '').toString();
@@ -94,24 +121,44 @@ class AuthService {
       };
     }
 
-    await _saveTokens(
-      accessToken: accessToken,
-      idToken: idToken,
-      refreshToken: refreshToken,
-      isFreshLogin: true,
-    );
+    try {
+      await _saveTokens(
+        accessToken: accessToken,
+        idToken: idToken,
+        refreshToken: refreshToken,
+        isFreshLogin: true,
+      );
+    } catch (error) {
+      return {
+        'success': false,
+        'message': 'Failed to save authentication session',
+      };
+    }
 
     final userResult = await AuthController.getUserDetails(idToken);
 
     if (userResult['success'] != true) {
       await logout(navigateToSplash: false);
+
       return {
         'success': false,
         'message': userResult['message'] ?? 'Failed to fetch user details',
       };
     }
 
-    final user = userResult['user'] as Map<String, dynamic>;
+    final rawUser = userResult['user'];
+
+    if (rawUser is! Map) {
+      await logout(navigateToSplash: false);
+
+      return {
+        'success': false,
+        'message': 'Invalid user details returned from server',
+      };
+    }
+
+    final user = Map<String, dynamic>.from(rawUser);
+
     await _saveUserToPrefs(user);
 
     return {
@@ -121,133 +168,311 @@ class AuthService {
     };
   }
 
-  static Future<bool> refreshSession() async {
-    final prefs = await SharedPreferences.getInstance();
-    print('🔄 Refreshing session...');
-    final refreshToken = prefs.getString('refreshToken') ?? '';
+  static Future<bool> refreshSession({bool navigateOnFailure = true}) async {
+    if (_isRefreshingSession) {
+      print('⏳ Session refresh already in progress');
 
-    if (refreshToken.isEmpty) {
-      await logout();
+      for (int attempt = 0; attempt < 20; attempt++) {
+        await Future<void>.delayed(const Duration(milliseconds: 250));
+
+        if (!_isRefreshingSession) {
+          final prefs = await SharedPreferences.getInstance();
+          final idToken = prefs.getString('idToken') ?? '';
+          final expiryString = prefs.getString('tokenExpiry');
+
+          if (idToken.isEmpty || expiryString == null) {
+            return false;
+          }
+
+          final expiry = DateTime.tryParse(expiryString);
+
+          return expiry != null && DateTime.now().isBefore(expiry);
+        }
+      }
+
       return false;
     }
 
-    final result = await AuthController.refreshSession(refreshToken);
+    _isRefreshingSession = true;
 
-    if (result['success'] != true) {
-      await logout();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final refreshToken = prefs.getString('refreshToken') ?? '';
+
+      print('🔄 Refreshing session...');
+
+      if (refreshToken.isEmpty) {
+        print('❌ Refresh token is missing');
+
+        await logout(navigateToSplash: navigateOnFailure);
+
+        return false;
+      }
+
+      final refreshExpiryString = prefs.getString('refreshTokenExpiry');
+
+      if (refreshExpiryString != null) {
+        final refreshExpiry = DateTime.tryParse(refreshExpiryString);
+
+        if (refreshExpiry == null || !DateTime.now().isBefore(refreshExpiry)) {
+          print('❌ Refresh token has reached its saved expiry');
+
+          await logout(navigateToSplash: navigateOnFailure);
+
+          return false;
+        }
+      }
+
+      final result = await AuthController.refreshSession(refreshToken);
+
+      if (result['success'] != true) {
+        print(
+          '❌ Session refresh failed: '
+          '${result['message'] ?? 'Unknown error'}',
+        );
+
+        await logout(navigateToSplash: navigateOnFailure);
+
+        return false;
+      }
+
+      final accessToken = (result['accessToken'] ?? '').toString();
+
+      final idToken = (result['idToken'] ?? '').toString();
+
+      final newRefreshToken = (result['refreshToken'] ?? '').toString();
+
+      final refreshTokenToSave = newRefreshToken.isNotEmpty
+          ? newRefreshToken
+          : refreshToken;
+
+      if (accessToken.isEmpty || idToken.isEmpty) {
+        print('❌ Refreshed ID or access token is missing');
+
+        await logout(navigateToSplash: navigateOnFailure);
+
+        return false;
+      }
+
+      await _saveTokens(
+        accessToken: accessToken,
+        idToken: idToken,
+        refreshToken: refreshTokenToSave,
+        isFreshLogin: false,
+      );
+
+      print('✅ Session refreshed successfully');
+
+      return true;
+    } catch (error, stackTrace) {
+      print('❌ Refresh session error: $error');
+      print(stackTrace);
+
+      await logout(navigateToSplash: navigateOnFailure);
+
       return false;
+    } finally {
+      _isRefreshingSession = false;
     }
-
-    final accessToken = (result['accessToken'] ?? '').toString();
-    final idToken = (result['idToken'] ?? '').toString();
-    final returnedRefreshToken = (result['refreshToken'] ?? refreshToken)
-        .toString();
-
-    if (accessToken.isEmpty || idToken.isEmpty) {
-      await logout();
-      return false;
-    }
-
-    await _saveTokens(
-      accessToken: accessToken,
-      idToken: idToken,
-      refreshToken: returnedRefreshToken,
-      isFreshLogin: false,
-    );
-   print('✅ Session refreshed successfully');
-    return true;
   }
 
- static Future<String?> getValidIdToken() async {
+  static Future<String?> getValidIdToken() async {
     final prefs = await SharedPreferences.getInstance();
 
     final idToken = prefs.getString('idToken') ?? '';
     final expiryString = prefs.getString('tokenExpiry');
+    final refreshToken = prefs.getString('refreshToken') ?? '';
 
-    print('🔍 idToken exists: ${idToken.isNotEmpty}');
-    print('🔍 tokenExpiry: $expiryString');
+    print('🔍 ID token exists: ${idToken.isNotEmpty}');
+    print('🔍 Refresh token exists: ${refreshToken.isNotEmpty}');
+    print('🔍 Token expiry: $expiryString');
+
+    if (refreshToken.isEmpty) {
+      print('❌ Missing refresh token');
+
+      await logout();
+
+      return null;
+    }
 
     if (idToken.isEmpty || expiryString == null) {
-      print('❌ Missing token or expiry');
-      await logout();
-      return null;
-    }
-    final expiry = DateTime.tryParse(expiryString);
+      print('⚠️ ID token or token expiry missing');
 
-    if (expiry == null) {
-      await logout();
-      return null;
-    }
-
-    final now = DateTime.now();
-
-    // Refresh 5 minutes before token expires
-    if (now.isAfter(expiry.subtract(_tokenRefreshBuffer))) {
       final refreshed = await refreshSession();
 
       if (!refreshed) {
-        await logout();
+        return null;
+      }
+
+      final updatedPrefs = await SharedPreferences.getInstance();
+
+      return updatedPrefs.getString('idToken');
+    }
+
+    final expiry = DateTime.tryParse(expiryString);
+
+    if (expiry == null) {
+      print('⚠️ Invalid token expiry');
+
+      final refreshed = await refreshSession();
+
+      if (!refreshed) {
+        return null;
+      }
+
+      final updatedPrefs = await SharedPreferences.getInstance();
+
+      return updatedPrefs.getString('idToken');
+    }
+
+    final refreshAt = expiry.subtract(_tokenRefreshBuffer);
+
+    if (!DateTime.now().isBefore(refreshAt)) {
+      final refreshed = await refreshSession();
+
+      if (!refreshed) {
         return null;
       }
     }
 
     final updatedPrefs = await SharedPreferences.getInstance();
-    return updatedPrefs.getString('idToken');
+
+    final updatedIdToken = updatedPrefs.getString('idToken') ?? '';
+
+    if (updatedIdToken.isEmpty) {
+      return null;
+    }
+
+    return updatedIdToken;
   }
 
- static Future<bool> hasValidSession() async {
-    final prefs = await SharedPreferences.getInstance();
+  static Future<bool> hasValidSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
 
-    final idToken = prefs.getString('idToken');
-    final expiryString = prefs.getString('tokenExpiry');
+      final idToken = prefs.getString('idToken') ?? '';
+      final refreshToken = prefs.getString('refreshToken') ?? '';
 
-    if (idToken == null || idToken.isEmpty || expiryString == null) {
+      final expiryString = prefs.getString('tokenExpiry');
+
+      final refreshExpiryString = prefs.getString('refreshTokenExpiry');
+
+      if (refreshToken.isEmpty) {
+        print('❌ No refresh token saved');
+        return false;
+      }
+
+      if (refreshExpiryString == null) {
+        print('⚠️ Refresh expiry missing, recreating it');
+
+        final fallbackRefreshExpiry = DateTime.now().add(_refreshTokenDuration);
+
+        await prefs.setString(
+          'refreshTokenExpiry',
+          fallbackRefreshExpiry.toIso8601String(),
+        );
+
+        _startRefreshTokenExpiryTimer(fallbackRefreshExpiry);
+      } else {
+        final refreshExpiry = DateTime.tryParse(refreshExpiryString);
+
+        if (refreshExpiry == null) {
+          print('❌ Invalid refresh token expiry');
+
+          await logout(navigateToSplash: false);
+
+          return false;
+        }
+
+        if (!DateTime.now().isBefore(refreshExpiry)) {
+          print('❌ Refresh token has expired');
+
+          await logout(navigateToSplash: false);
+
+          return false;
+        }
+      }
+
+      if (idToken.isNotEmpty && expiryString != null) {
+        final idTokenExpiry = DateTime.tryParse(expiryString);
+
+        if (idTokenExpiry != null) {
+          final refreshAt = idTokenExpiry.subtract(_tokenRefreshBuffer);
+
+          if (DateTime.now().isBefore(refreshAt)) {
+            print('✅ Existing ID token is still valid');
+
+            return true;
+          }
+        }
+      }
+
+      print(
+        '🔄 ID token expired or close to expiry. '
+        'Trying refresh token...',
+      );
+
+      return refreshSession(navigateOnFailure: false);
+    } catch (error, stackTrace) {
+      print('❌ Session restore error: $error');
+      print(stackTrace);
+
       return false;
     }
-
-    final expiry = DateTime.tryParse(expiryString);
-
-    if (expiry == null) {
-      return false;
-    }
-
-    // Just check if the token has not expired.
-    // Do NOT refresh the session here.
-    return DateTime.now().isBefore(expiry);
   }
 
   static Future<void> startSavedSessionWatcher() async {
     final prefs = await SharedPreferences.getInstance();
 
     final expiryString = prefs.getString('tokenExpiry');
+
     final refreshExpiryString = prefs.getString('refreshTokenExpiry');
 
-    if (expiryString == null || refreshExpiryString == null) return;
+    if (expiryString == null) {
+      print('⚠️ No ID token expiry available');
 
-    final expiry = DateTime.tryParse(expiryString);
-    final refreshExpiry = DateTime.tryParse(refreshExpiryString);
+      final refreshed = await refreshSession(navigateOnFailure: false);
 
-    if (expiry == null || refreshExpiry == null) {
-      await logout();
-      return;
+      if (!refreshed) {
+        return;
+      }
     }
 
-    _startSessionRefreshTimer(expiry);
-    _startRefreshTokenExpiryTimer(refreshExpiry);
+    final updatedPrefs = await SharedPreferences.getInstance();
+
+    final updatedExpiryString = updatedPrefs.getString('tokenExpiry');
+
+    if (updatedExpiryString != null) {
+      final expiry = DateTime.tryParse(updatedExpiryString);
+
+      if (expiry != null) {
+        _startSessionRefreshTimer(expiry);
+      }
+    }
+
+    if (refreshExpiryString != null) {
+      final refreshExpiry = DateTime.tryParse(refreshExpiryString);
+
+      if (refreshExpiry != null) {
+        _startRefreshTokenExpiryTimer(refreshExpiry);
+      }
+    }
   }
 
- static void _startSessionRefreshTimer(DateTime expiry) {
+  static void _startSessionRefreshTimer(DateTime expiry) {
     _sessionRefreshTimer?.cancel();
 
     final refreshAt = expiry.subtract(_tokenRefreshBuffer);
+
     final duration = refreshAt.difference(DateTime.now());
 
     print('⏳ ID token refresh scheduled in: $duration');
 
     if (duration.isNegative || duration.inSeconds <= 0) {
-      Future.microtask(() async {
+      Future<void>.microtask(() async {
         await refreshSession();
       });
+
       return;
     }
 
@@ -255,7 +480,7 @@ class AuthService {
       final refreshed = await refreshSession();
 
       if (!refreshed) {
-        await logout();
+        print('❌ Scheduled session refresh failed');
       }
     });
   }
@@ -268,9 +493,10 @@ class AuthService {
     print('🗓 Refresh token expires/logs out in: $duration');
 
     if (duration.isNegative || duration.inSeconds <= 0) {
-      Future.microtask(() async {
+      Future<void>.microtask(() async {
         await logout();
       });
+
       return;
     }
 
@@ -279,14 +505,14 @@ class AuthService {
     });
   }
 
-
-
   static Future<void> logout({bool navigateToSplash = true}) async {
     _sessionRefreshTimer?.cancel();
     _sessionRefreshTimer = null;
 
     _refreshTokenExpiryTimer?.cancel();
     _refreshTokenExpiryTimer = null;
+
+    _isRefreshingSession = false;
 
     final prefs = await SharedPreferences.getInstance();
 
@@ -327,13 +553,11 @@ class AuthService {
     final tokenExpiry = _extractJwtExpiry(idToken);
 
     if (tokenExpiry == null) {
-      throw Exception('Unable to parse idToken expiry');
+      throw Exception('Unable to parse ID token expiry');
     }
 
-    // Set refresh token expiry only on real login/signup.
-    // Do not reset the 30 days every normal token refresh.
     if (isFreshLogin || prefs.getString('refreshTokenExpiry') == null) {
-      final refreshTokenExpiry = DateTime.now().add(const Duration(days: 30));
+      final refreshTokenExpiry = DateTime.now().add(_refreshTokenDuration);
 
       await prefs.setString(
         'refreshTokenExpiry',
@@ -344,8 +568,11 @@ class AuthService {
     }
 
     await prefs.setString('accessToken', accessToken);
+
     await prefs.setString('idToken', idToken);
+
     await prefs.setString('refreshToken', refreshToken);
+
     await prefs.setString('tokenExpiry', tokenExpiry.toIso8601String());
 
     _startSessionRefreshTimer(tokenExpiry);
@@ -355,19 +582,31 @@ class AuthService {
     try {
       final parts = jwt.split('.');
 
-      if (parts.length != 3) return null;
+      if (parts.length != 3) {
+        return null;
+      }
 
       final payload = parts[1];
       final normalized = base64Url.normalize(payload);
+
       final decoded = utf8.decode(base64Url.decode(normalized));
+
       final map = jsonDecode(decoded) as Map<String, dynamic>;
 
       final exp = map['exp'];
 
-      if (exp is! int) return null;
+      if (exp is int) {
+        return DateTime.fromMillisecondsSinceEpoch(exp * 1000);
+      }
 
-      return DateTime.fromMillisecondsSinceEpoch(exp * 1000);
-    } catch (_) {
+      if (exp is num) {
+        return DateTime.fromMillisecondsSinceEpoch(exp.toInt() * 1000);
+      }
+
+      return null;
+    } catch (error) {
+      print('❌ Failed to decode JWT expiry: $error');
+
       return null;
     }
   }
@@ -376,8 +615,11 @@ class AuthService {
     final prefs = await SharedPreferences.getInstance();
 
     await prefs.setString('userId', (user['userId'] ?? '').toString());
+
     await prefs.setString('firstName', (user['firstName'] ?? '').toString());
+
     await prefs.setString('lastName', (user['lastName'] ?? '').toString());
+
     await prefs.setString('email', (user['email'] ?? '').toString());
 
     await prefs.setString(
@@ -400,14 +642,17 @@ class AuthService {
       (user['referredByUserId'] ?? '').toString(),
     );
 
-    await prefs.setDouble(
-      'wanBucksBalance',
-      ((user['wanBucksBalance'] ?? 0) as num).toDouble(),
-    );
+    final wanBucksValue = user['wanBucksBalance'];
+
+    final wanBucksBalance = wanBucksValue is num
+        ? wanBucksValue.toDouble()
+        : double.tryParse(wanBucksValue?.toString() ?? '') ?? 0.0;
+
+    await prefs.setDouble('wanBucksBalance', wanBucksBalance);
 
     await prefs.setBool(
       'referralRewardApplied',
-      (user['referralRewardApplied'] ?? false) as bool,
+      user['referralRewardApplied'] == true,
     );
 
     await prefs.setString('createdAt', (user['createdAt'] ?? '').toString());
@@ -425,7 +670,7 @@ class AuthService {
       };
     }
 
-    return await AuthController.requestPhoneUpdate(
+    return AuthController.requestPhoneUpdate(
       idToken: idToken,
       phoneNumber: phoneNumber,
     );
@@ -452,6 +697,7 @@ class AuthService {
 
     if (result['success'] == true) {
       final prefs = await SharedPreferences.getInstance();
+
       await prefs.setString('phoneNumber', phoneNumber);
     }
 
