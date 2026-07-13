@@ -880,7 +880,7 @@ class _PremiumChatHeader extends StatelessWidget {
                       ),
                       SizedBox(height: _r(context, 3)),
                       Text(
-                        'WANPADI assistant',
+                        'Wanpadi assistant',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.montserrat(

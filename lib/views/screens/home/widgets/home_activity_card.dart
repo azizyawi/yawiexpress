@@ -61,50 +61,78 @@ class _HomeActivityCardState extends State<HomeActivityCard> {
     }
   }
 
-  Future<void> _connectSocket() async {
+Future<void> _connectSocket() async {
     try {
       await _socketSubscription?.cancel();
+      _socketSubscription = null;
+
       await _channel?.sink.close();
+      _channel = null;
 
-      _channel = await customer_orders.OrderApiService.connectToOrderUpdates();
+      final channel =
+          await customer_orders.OrderApiService.connectToOrderUpdates();
 
-      _socketSubscription = _channel!.stream.listen((event) {
-        try {
-          final decoded = jsonDecode(event);
+      if (!mounted) {
+        await channel.sink.close();
+        return;
+      }
 
-          if (!mounted || decoded is! Map<String, dynamic>) return;
+      _channel = channel;
 
-          setState(() {
-            if (decoded['type'] == 'ORDER_UPDATED' &&
-                decoded['data'] is Map<String, dynamic>) {
-              final updatedOrder = OrderModel.fromJson(
-                decoded['data'] as Map<String, dynamic>,
-              );
+      _socketSubscription = channel.stream.listen(
+        (event) {
+          try {
+            final decoded = jsonDecode(event);
 
-              final index = _orders.indexWhere(
-                (order) => order.orderId == updatedOrder.orderId,
-              );
+            if (!mounted || decoded is! Map<String, dynamic>) {
+              return;
+            }
 
-              if (index >= 0) {
-                _orders[index] = updatedOrder;
-              } else {
-                _orders.insert(0, updatedOrder);
+            setState(() {
+              if (decoded['type'] == 'ORDER_UPDATED' &&
+                  decoded['data'] is Map<String, dynamic>) {
+                final updatedOrder = OrderModel.fromJson(
+                  decoded['data'] as Map<String, dynamic>,
+                );
+
+                final index = _orders.indexWhere(
+                  (order) => order.orderId == updatedOrder.orderId,
+                );
+
+                if (index >= 0) {
+                  _orders[index] = updatedOrder;
+                } else {
+                  _orders.insert(0, updatedOrder);
+                }
               }
-            }
 
-            if (decoded['type'] == 'ORDER_DELETED') {
-              final orderId = decoded['orderId'];
-              _orders.removeWhere((order) => order.orderId == orderId);
-            }
+              if (decoded['type'] == 'ORDER_DELETED') {
+                final orderId = decoded['orderId'];
 
-            _sortOrders();
-          });
-        } catch (e) {
-          debugPrint('Home socket message parse error: $e');
-        }
-      });
-    } catch (e) {
-      debugPrint('Home WebSocket connection failed: $e');
+                _orders.removeWhere((order) => order.orderId == orderId);
+              }
+
+              _sortOrders();
+            });
+          } catch (error) {
+            debugPrint('Home socket message parse error: $error');
+          }
+        },
+        onError: (Object error, StackTrace stackTrace) {
+          debugPrint('❌ Home WebSocket stream error: $error');
+        },
+        onDone: () {
+          debugPrint(
+            '🔌 Home WebSocket closed. '
+            'Code: ${channel.closeCode}, '
+            'Reason: ${channel.closeReason}',
+          );
+        },
+        cancelOnError: false,
+      );
+    } catch (error, stackTrace) {
+      debugPrint('❌ Home WebSocket connection failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
     }
   }
 

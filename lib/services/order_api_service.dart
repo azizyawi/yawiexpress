@@ -10,8 +10,6 @@ class OrderApiService {
   Future<Map<String, dynamic>> cancelOrder({required String orderId}) async {
     final url = Uri.parse('$baseUrl/orders/cancel');
 
-    print('CANCEL ORDER URL: $url');
-    print('CANCEL ORDER ID: $orderId');
 
     final response = await http.post(
       url,
@@ -19,8 +17,7 @@ class OrderApiService {
       body: jsonEncode({'orderId': orderId}),
     );
 
-    print('CANCEL ORDER STATUS: ${response.statusCode}');
-    print('CANCEL ORDER RESPONSE: ${response.body}');
+    
 
     final Map<String, dynamic> decoded =
         jsonDecode(response.body) as Map<String, dynamic>;

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import 'package:wanmac/core/theme/app_colors.dart';
 
-double _scale(BuildContext context) {
+double _faqScale(BuildContext context) {
   final size = MediaQuery.sizeOf(context);
 
   final isTablet = size.shortestSide >= 600;
@@ -14,11 +15,12 @@ double _scale(BuildContext context) {
   return 1.0;
 }
 
-double _maxContentWidth(BuildContext context) {
+double _faqMaxContentWidth(BuildContext context) {
   final size = MediaQuery.sizeOf(context);
-  final isTablet = size.shortestSide >= 600;
 
-  if (isTablet) return 680;
+  if (size.shortestSide >= 600) {
+    return 680;
+  }
 
   return double.infinity;
 }
@@ -28,281 +30,579 @@ class FAQScreen extends StatelessWidget {
 
   static const List<_FAQItem> faqs = [
     _FAQItem(
-      category: "Getting Started",
-      icon: Icons.local_shipping_outlined,
-      question: "What is WANPADI?",
+      category: 'Getting Started',
+      icon: Icons.two_wheeler_rounded,
+      question: 'What is Wanpadi?',
       answer:
-          "WANPADI is a trusted package delivery platform built to help users send items safely, quickly, and conveniently. Our process is designed around clear delivery tracking, verified handover, and secure confirmation.",
+          'Wanpadi is a trusted delivery platform that connects customers with verified riders. You can create a delivery, track its progress, and confirm pickup and delivery securely.',
     ),
     _FAQItem(
-      category: "Getting Started",
+      category: 'Getting Started',
       icon: Icons.route_outlined,
-      question: "How does WANPADI delivery work?",
+      question: 'How does a Wanpadi delivery work?',
       answer:
-          "Create a delivery request, enter the pickup and drop-off details, review your delivery information, and confirm the request. A rider is then assigned to collect the package and deliver it to the receiver.",
+          'Create a delivery request, enter the pickup and delivery details, review the information, and confirm your request. A nearby rider will accept the delivery, collect the package, and take it to the receiver.',
     ),
     _FAQItem(
-      category: "Security Codes",
-      icon: Icons.verified_user_outlined,
-      question: "What is a Pickup Code?",
+      category: 'Getting Started',
+      icon: Icons.schedule_rounded,
+      question: 'How long does delivery take?',
       answer:
-          "A Pickup Code is a unique security code given to the sender. It should only be shared with the rider after the package has been physically handed over. This confirms that the rider has collected the correct package.",
+          'Delivery time depends on the pickup location, destination, traffic, weather, and rider availability. You can follow the delivery progress directly from the order screen.',
     ),
     _FAQItem(
-      category: "Security Codes",
+      category: 'Security Codes',
+      icon: Icons.password_rounded,
+      question: 'What is a Pickup Code?',
+      answer:
+          'A Pickup Code is a unique security code given to the sender. Share it with the rider only after the package has been physically handed over. It confirms that the rider collected the correct package.',
+    ),
+    _FAQItem(
+      category: 'Security Codes',
       icon: Icons.lock_person_outlined,
-      question: "What is a Delivery Code?",
+      question: 'What is a Delivery Code?',
       answer:
-          "A Delivery Code is a unique confirmation code given to the receiver. It should only be shared with the rider after the receiver has received the package. This confirms successful delivery.",
+          'A Delivery Code is a confirmation code given to the receiver. It should only be shared with the rider after the receiver has received and checked the package.',
     ),
     _FAQItem(
-      category: "Security Codes",
-      icon: Icons.security_outlined,
-      question: "Why does WANPADI use two different codes?",
+      category: 'Security Codes',
+      icon: Icons.verified_user_outlined,
+      question: 'Why does Wanpadi use two codes?',
       answer:
-          "WANPADI uses a Pickup Code and a Delivery Code to protect both sender and receiver. The Pickup Code confirms collection from the sender, while the Delivery Code confirms final handover to the receiver.",
+          'The Pickup Code protects the sender by confirming package collection. The Delivery Code protects the receiver by confirming final delivery. Together, they provide a safer handover process.',
     ),
     _FAQItem(
-      category: "Security Codes",
+      category: 'Security Codes',
       icon: Icons.warning_amber_rounded,
-      question: "Should I give the codes before pickup or delivery?",
+      question: 'Should I share a code before handover?',
       answer:
-          "No. Never share a code early. The Pickup Code should only be shared after the rider has collected the package. The Delivery Code should only be shared after the receiver has received the package.",
+          'No. Never share a security code early. Share the Pickup Code only after the rider has collected the package, and share the Delivery Code only after the receiver has received it.',
     ),
     _FAQItem(
-      category: "Delivery Safety",
+      category: 'Delivery and Safety',
       icon: Icons.inventory_2_outlined,
-      question: "What items can I send with WANPADI?",
+      question: 'What items can I send?',
       answer:
-          "You can send regular packages, documents, and personal items. Illegal, dangerous, restricted, stolen, or prohibited items are not allowed on WANPADI.",
+          'You can send regular packages, documents, food, groceries, and other permitted personal or business items. Illegal, dangerous, stolen, restricted, or prohibited items are not allowed.',
     ),
     _FAQItem(
-      category: "Delivery Safety",
-      icon: Icons.track_changes_outlined,
-      question: "Can I track my delivery?",
+      category: 'Delivery and Safety',
+      icon: Icons.location_searching_rounded,
+      question: 'Can I track my delivery?',
       answer:
-          "Yes. WANPADI allows users to follow the progress of their delivery from pickup to final drop-off.",
+          'Yes. Open the order screen to see the current delivery status and follow the rider’s progress from pickup to final delivery.',
     ),
     _FAQItem(
-      category: "Support",
-      icon: Icons.report_problem_outlined,
-      question: "What should I do if there is a delivery issue?",
+      category: 'Delivery and Safety',
+      icon: Icons.person_pin_circle_outlined,
+      question: 'Who delivers my package?',
       answer:
-          "If you notice any issue with your delivery, contact support immediately through the official support channels in the app.",
+          'Your package is delivered by a Wanpadi rider who has completed the platform’s onboarding and approval process.',
+    ),
+    _FAQItem(
+      category: 'Support',
+      icon: Icons.support_agent_rounded,
+      question: 'What should I do if there is a problem?',
+      answer:
+          'Open the affected order and contact Wanpadi support with your order ID and a clear explanation of the issue. This helps the support team investigate more quickly.',
+    ),
+    _FAQItem(
+      category: 'Support',
+      icon: Icons.receipt_long_outlined,
+      question: 'Where can I find my order ID?',
+      answer:
+          'Open the Orders screen and select the affected delivery. Your order ID will be displayed inside the order details.',
     ),
   ];
 
   @override
   Widget build(BuildContext context) {
-    final s = _scale(context);
+    final s = _faqScale(context);
+
     double r(double value) => value * s;
 
     final groupedFaqs = <String, List<_FAQItem>>{};
 
     for (final faq in faqs) {
-      groupedFaqs.putIfAbsent(faq.category, () => []).add(faq);
+      groupedFaqs.putIfAbsent(faq.category, () => <_FAQItem>[]);
+
+      groupedFaqs[faq.category]!.add(faq);
     }
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: _maxContentWidth(context)),
-            child: ListView(
-              padding: EdgeInsets.symmetric(horizontal: r(20), vertical: r(14)),
-              children: [
-                _topBar(context),
-                SizedBox(height: r(18)),
-                Text(
-                  "Frequently Asked Questions",
-                  style: GoogleFonts.montserrat(
-                    fontSize: r(20),
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
-                    letterSpacing: -0.3,
-                  ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: _faqMaxContentWidth(context)),
+          child: ListView(
+            padding: EdgeInsets.only(bottom: r(34)),
+            children: [
+              _FAQHeroHeader(onBack: () => Navigator.pop(context)),
+
+              Padding(
+                padding: EdgeInsets.fromLTRB(r(20), r(26), r(20), 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _HelpSummaryCard(),
+
+                    SizedBox(height: r(30)),
+
+                    ...groupedFaqs.entries.map((entry) {
+                      return _FAQSection(title: entry.key, items: entry.value);
+                    }),
+
+                    SizedBox(height: r(8)),
+                  ],
                 ),
-                SizedBox(height: r(6)),
-                Text(
-                  "Clear answers about deliveries, security codes, and package handling on WANPADI.",
-                  style: GoogleFonts.montserrat(
-                    fontSize: r(12.5),
-                    height: 1.5,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                SizedBox(height: r(20)),
-                _trustStrip(context),
-                SizedBox(height: r(26)),
-                ...groupedFaqs.entries.map((entry) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _sectionTitle(context, entry.key),
-                      SizedBox(height: r(10)),
-                      ...entry.value.map((faq) => _PremiumFAQTile(item: faq)),
-                      SizedBox(height: r(18)),
-                    ],
-                  );
-                }),
-                SizedBox(height: r(18)),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
+}
 
-  Widget _topBar(BuildContext context) {
-    final s = _scale(context);
+class _FAQHeroHeader extends StatelessWidget {
+  final VoidCallback onBack;
+
+  const _FAQHeroHeader({required this.onBack});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = _faqScale(context);
+    final topPadding = MediaQuery.paddingOf(context).top;
+
     double r(double value) => value * s;
 
-    return Row(
-      children: [
-        InkWell(
-          onTap: () => Navigator.pop(context),
-          borderRadius: BorderRadius.circular(r(16)),
-          child: Container(
-            height: r(46),
-            width: r(46),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(r(16)),
-              border: Border.all(color: AppColors.inputBorder),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.035),
-                  blurRadius: 18,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Icon(
-              Icons.arrow_back_ios_new_rounded,
-              size: r(18),
-              color: AppColors.textPrimary,
-            ),
-          ),
-        ),
-        SizedBox(width: r(14)),
-        Expanded(
-          child: Text(
-            "FAQs",
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.montserrat(
-              fontSize: r(25),
-              fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
-              letterSpacing: -0.5,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _trustStrip(BuildContext context) {
-    final s = _scale(context);
-    double r(double value) => value * s;
-
-    return Row(
-      children: [
-        Expanded(
-          child: _trustItem(
-            context,
-            icon: Icons.lock_outline_rounded,
-            title: "Secure",
-            subtitle: "Code verified",
-          ),
-        ),
-        SizedBox(width: r(10)),
-        Expanded(
-          child: _trustItem(
-            context,
-            icon: Icons.route_outlined,
-            title: "Trackable",
-            subtitle: "Live progress",
-          ),
-        ),
-        SizedBox(width: r(10)),
-        Expanded(
-          child: _trustItem(
-            context,
-            icon: Icons.verified_rounded,
-            title: "Verified",
-            subtitle: "Safe handover",
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _trustItem(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
-    final s = _scale(context);
-    double r(double value) => value * s;
-
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: r(10), vertical: r(14)),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(r(20)),
-        border: Border.all(color: AppColors.inputBorder),
-      ),
-      child: Column(
+    return SizedBox(
+      height: topPadding + r(250),
+      child: Stack(
         children: [
-          Icon(icon, color: AppColors.brandBlue, size: r(22)),
-          SizedBox(height: r(8)),
-          Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.montserrat(
-              fontSize: r(12.5),
-              fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
+          Positioned.fill(
+            child: Container(
+              color: AppColors.brandBlueDark,
+              child: CustomPaint(painter: _FAQHeaderPainter()),
             ),
           ),
-          SizedBox(height: r(3)),
-          Text(
-            subtitle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.montserrat(
-              fontSize: r(10.5),
-              fontWeight: FontWeight.w500,
-              color: AppColors.textSecondary,
+
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              r(20),
+              topPadding + r(14),
+              r(20),
+              r(22),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Material(
+                      color: Colors.white.withOpacity(0.14),
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        onTap: onBack,
+                        customBorder: const CircleBorder(),
+                        child: Container(
+                          height: r(46),
+                          width: r(46),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.18),
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.arrow_back_ios_new_rounded,
+                            color: Colors.white,
+                            size: r(18),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    SizedBox(width: r(14)),
+
+                    Expanded(
+                      child: Text(
+                        'Help Centre',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.montserrat(
+                          fontSize: r(24),
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: -0.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const Spacer(),
+
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      height: r(78),
+                      width: r(78),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.14),
+                        borderRadius: BorderRadius.circular(r(24)),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.20),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.12),
+                            blurRadius: 22,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.two_wheeler_rounded,
+                        size: r(40),
+                        color: Colors.white,
+                      ),
+                    ),
+
+                    SizedBox(width: r(17)),
+
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'How can we help?',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.montserrat(
+                              fontSize: r(21),
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+
+                          SizedBox(height: r(7)),
+
+                          Text(
+                            'Find clear answers about deliveries, tracking, security codes and package safety.',
+                            style: GoogleFonts.montserrat(
+                              fontSize: r(11.5),
+                              height: 1.45,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white.withOpacity(0.76),
+                            ),
+                          ),
+
+                          SizedBox(height: r(11)),
+
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: r(11),
+                              vertical: r(6),
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.14),
+                              borderRadius: BorderRadius.circular(r(50)),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.18),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.bolt_rounded,
+                                  color: Colors.white,
+                                  size: r(13),
+                                ),
+
+                                SizedBox(width: r(5)),
+
+                                Text(
+                                  'Quick answers',
+                                  style: GoogleFonts.montserrat(
+                                    fontSize: r(10.5),
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _sectionTitle(BuildContext context, String title) {
-    final s = _scale(context);
+class _HelpSummaryCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final s = _faqScale(context);
+
+    double r(double value) => value * s;
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: r(14), vertical: r(17)),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(r(20)),
+        border: Border.all(color: AppColors.inputBorder),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _SummaryItem(
+              icon: Icons.lock_outline_rounded,
+              title: 'Secure',
+              subtitle: 'Code verified',
+            ),
+          ),
+
+          _VerticalDivider(),
+
+          Expanded(
+            child: _SummaryItem(
+              icon: Icons.location_searching_rounded,
+              title: 'Trackable',
+              subtitle: 'Live progress',
+            ),
+          ),
+
+          _VerticalDivider(),
+
+          Expanded(
+            child: _SummaryItem(
+              icon: Icons.two_wheeler_rounded,
+              title: 'Reliable',
+              subtitle: 'Verified riders',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SummaryItem extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  const _SummaryItem({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final s = _faqScale(context);
+
+    double r(double value) => value * s;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          height: r(38),
+          width: r(38),
+          decoration: BoxDecoration(
+            color: AppColors.infoBg,
+            borderRadius: BorderRadius.circular(r(12)),
+          ),
+          child: Icon(icon, size: r(19), color: AppColors.brandBlueDark),
+        ),
+
+        SizedBox(height: r(8)),
+
+        Text(
+          title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.montserrat(
+            fontSize: r(11.5),
+            fontWeight: FontWeight.w800,
+            color: AppColors.textPrimary,
+          ),
+        ),
+
+        SizedBox(height: r(3)),
+
+        Text(
+          subtitle,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.montserrat(
+            fontSize: r(9.5),
+            fontWeight: FontWeight.w500,
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _VerticalDivider extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final s = _faqScale(context);
+
+    double r(double value) => value * s;
+
+    return Container(
+      height: r(54),
+      width: 1,
+      margin: EdgeInsets.symmetric(horizontal: r(5)),
+      color: AppColors.inputBorder,
+    );
+  }
+}
+
+class _FAQSection extends StatelessWidget {
+  final String title;
+  final List<_FAQItem> items;
+
+  const _FAQSection({required this.title, required this.items});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = _faqScale(context);
+
     double r(double value) => value * s;
 
     return Padding(
-      padding: EdgeInsets.only(left: r(4)),
-      child: Text(
-        title,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: GoogleFonts.montserrat(
-          fontSize: r(15.5),
-          fontWeight: FontWeight.w800,
-          color: AppColors.textPrimary,
-          letterSpacing: -0.2,
-        ),
+      padding: EdgeInsets.only(bottom: r(26)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: EdgeInsets.only(left: r(2), bottom: r(11)),
+            child: Text(
+              title,
+              style: GoogleFonts.montserrat(
+                fontSize: r(14),
+                fontWeight: FontWeight.w700,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+
+          Container(
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(r(20)),
+              border: Border.all(color: AppColors.inputBorder),
+            ),
+            child: Column(
+              children: List.generate(items.length, (index) {
+                return _CleanFAQTile(
+                  item: items[index],
+                  showDivider: index != items.length - 1,
+                );
+              }),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CleanFAQTile extends StatelessWidget {
+  final _FAQItem item;
+  final bool showDivider;
+
+  const _CleanFAQTile({required this.item, required this.showDivider});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = _faqScale(context);
+
+    double r(double value) => value * s;
+
+    return Theme(
+      data: Theme.of(context).copyWith(
+        dividerColor: Colors.transparent,
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+      ),
+      child: Column(
+        children: [
+          ExpansionTile(
+            tilePadding: EdgeInsets.fromLTRB(r(14), r(7), r(12), r(7)),
+            childrenPadding: EdgeInsets.fromLTRB(r(68), 0, r(18), r(19)),
+            iconColor: AppColors.brandBlueDark,
+            collapsedIconColor: AppColors.textHint,
+            leading: Container(
+              height: r(40),
+              width: r(40),
+              decoration: BoxDecoration(
+                color: AppColors.infoBg,
+                borderRadius: BorderRadius.circular(r(13)),
+              ),
+              child: Icon(
+                item.icon,
+                size: r(20),
+                color: AppColors.brandBlueDark,
+              ),
+            ),
+            title: Text(
+              item.question,
+              style: GoogleFonts.montserrat(
+                fontSize: r(13),
+                height: 1.35,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+                letterSpacing: -0.1,
+              ),
+            ),
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  item.answer,
+                  style: GoogleFonts.montserrat(
+                    fontSize: r(12),
+                    height: 1.65,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          if (showDivider)
+            Padding(
+              padding: EdgeInsets.only(left: r(68)),
+              child: Divider(
+                height: 1,
+                thickness: 1,
+                color: AppColors.inputBorder,
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -322,77 +622,116 @@ class _FAQItem {
   });
 }
 
-class _PremiumFAQTile extends StatelessWidget {
-  final _FAQItem item;
+class _FAQHeaderPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final width = size.width;
+    final height = size.height;
 
-  const _PremiumFAQTile({required this.item});
+    final softLine = Paint()
+      ..color = Colors.white.withOpacity(0.10)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 22
+      ..strokeCap = StrokeCap.round;
+
+    final dashedLine = Paint()
+      ..color = Colors.white.withOpacity(0.22)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round;
+
+    final faintLine = Paint()
+      ..color = Colors.white.withOpacity(0.14)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+
+    final route = Path()
+      ..moveTo(width * 0.20, height * 0.92)
+      ..cubicTo(
+        width * 0.34,
+        height * 0.56,
+        width * 0.66,
+        height * 0.84,
+        width * 1.04,
+        height * 0.30,
+      );
+
+    canvas.drawPath(route, softLine);
+    _drawDashedPath(canvas, route, dashedLine);
+
+    _drawRouteNode(canvas, Offset(width * 0.34, height * 0.73));
+
+    _drawRouteNode(canvas, Offset(width * 0.67, height * 0.61));
+
+    _drawRouteNode(canvas, Offset(width * 0.92, height * 0.38));
+
+    final helpBubble = RRect.fromRectAndRadius(
+      Rect.fromLTWH(width * 0.72, height * 0.16, width * 0.19, height * 0.24),
+      const Radius.circular(18),
+    );
+
+    canvas.drawRRect(helpBubble, faintLine);
+
+    canvas.drawCircle(
+      Offset(width * 0.815, height * 0.235),
+      width * 0.018,
+      faintLine,
+    );
+
+    canvas.drawLine(
+      Offset(width * 0.79, height * 0.30),
+      Offset(width * 0.84, height * 0.30),
+      faintLine,
+    );
+
+    canvas.drawLine(
+      Offset(width * 0.53, height * 0.18),
+      Offset(width * 0.53, height * 0.29),
+      dashedLine,
+    );
+
+    canvas.drawLine(
+      Offset(width * 0.48, height * 0.235),
+      Offset(width * 0.58, height * 0.235),
+      dashedLine,
+    );
+
+    final backgroundCircle = Paint()
+      ..color = Colors.white.withOpacity(0.035)
+      ..style = PaintingStyle.fill;
+
+    canvas.drawCircle(
+      Offset(width * 0.90, height * 0.13),
+      width * 0.19,
+      backgroundCircle,
+    );
+  }
+
+  void _drawDashedPath(Canvas canvas, Path path, Paint paint) {
+    for (final metric in path.computeMetrics()) {
+      double distance = 0;
+
+      while (distance < metric.length) {
+        final end = (distance + 12).clamp(0.0, metric.length);
+
+        canvas.drawPath(metric.extractPath(distance, end), paint);
+
+        distance += 24;
+      }
+    }
+  }
+
+  void _drawRouteNode(Canvas canvas, Offset center) {
+    final outer = Paint()..color = Colors.white.withOpacity(0.08);
+
+    final inner = Paint()..color = Colors.white.withOpacity(0.28);
+
+    canvas.drawCircle(center, 10, outer);
+    canvas.drawCircle(center, 4, inner);
+  }
 
   @override
-  Widget build(BuildContext context) {
-    final s = _scale(context);
-    double r(double value) => value * s;
-
-    return Container(
-      margin: EdgeInsets.only(bottom: r(12)),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(r(22)),
-        border: Border.all(color: AppColors.inputBorder),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.025),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Theme(
-        data: Theme.of(context).copyWith(
-          dividerColor: Colors.transparent,
-          splashColor: Colors.transparent,
-          highlightColor: Colors.transparent,
-        ),
-        child: ExpansionTile(
-          tilePadding: EdgeInsets.symmetric(horizontal: r(14), vertical: r(8)),
-          childrenPadding: EdgeInsets.fromLTRB(r(16), 0, r(16), r(18)),
-          expandedCrossAxisAlignment: CrossAxisAlignment.start,
-          iconColor: AppColors.brandBlue,
-          collapsedIconColor: AppColors.textHint,
-          leading: Container(
-            height: r(42),
-            width: r(42),
-            decoration: BoxDecoration(
-              color: AppColors.infoBg,
-              borderRadius: BorderRadius.circular(r(15)),
-            ),
-            child: Icon(item.icon, color: AppColors.brandBlue, size: r(21)),
-          ),
-          title: Text(
-            item.question,
-            style: GoogleFonts.montserrat(
-              fontSize: r(13.5),
-              height: 1.35,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
-              letterSpacing: -0.15,
-            ),
-          ),
-          children: [
-            Padding(
-              padding: EdgeInsets.only(left: r(56), right: r(4)),
-              child: Text(
-                item.answer,
-                style: GoogleFonts.montserrat(
-                  fontSize: r(12.4),
-                  height: 1.65,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return false;
   }
 }

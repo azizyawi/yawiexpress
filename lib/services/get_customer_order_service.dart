@@ -60,10 +60,25 @@ class OrderApiService {
       throw Exception('No userId found for WebSocket');
     }
 
-    final channel = WebSocketChannel.connect(Uri.parse(ApiConfig.wsUrl));
+    final uri = Uri.parse(ApiConfig.wsUrl);
 
-    // Subscribe after connection
-    channel.sink.add(jsonEncode({"action": "subscribe", "userId": userId}));
+    print('🔌 Connecting WebSocket to: $uri');
+
+    final channel = WebSocketChannel.connect(uri);
+
+    // Wait until the WebSocket handshake finishes.
+    await channel.ready.timeout(
+      const Duration(seconds: 15),
+      onTimeout: () {
+        throw Exception('WebSocket connection timed out');
+      },
+    );
+
+    print('✅ WebSocket connected successfully');
+
+    channel.sink.add(jsonEncode({'action': 'subscribe', 'userId': userId}));
+
+    print('📡 WebSocket subscription sent for user: $userId');
 
     return channel;
   }
