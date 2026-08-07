@@ -1,30 +1,34 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
+import 'package:location/location.dart' as loc;
 
 import '../config/google_places_config.dart';
 import '../models/location_model.dart';
 import '../models/location_suggestion_model.dart';
-import 'package:location/location.dart' as loc;
 
 class LocationService {
+  // Center of Benin City
   static const double _beninLat = 6.3350;
   static const double _beninLng = 5.6037;
+
   static const String _googleHost = 'maps.googleapis.com';
 
-  static const double _minBeninLat = 6.20;
-  static const double _maxBeninLat = 6.45;
-  static const double _minBeninLng = 5.50;
-  static const double _maxBeninLng = 5.75;
+  // Wider Benin City service area
+  static const double _minBeninLat = 6.15;
+  static const double _maxBeninLat = 6.50;
+  static const double _minBeninLng = 5.40;
+  static const double _maxBeninLng = 5.85;
 
   static const int _freshLocationMaxAgeSeconds = 30;
 
   StreamSubscription<Position>? _liveLocationSubscription;
 
   Future<void> _ensureLocationReady() async {
-    // Ask app permission first
-    LocationPermission permission = await Geolocator.checkPermission();
+    LocationPermission permission =
+        await Geolocator.checkPermission();
 
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
@@ -35,10 +39,11 @@ class LocationService {
     }
 
     if (permission == LocationPermission.deniedForever) {
-      throw Exception('Location permissions are permanently denied.');
+      throw Exception(
+        'Location permissions are permanently denied.',
+      );
     }
 
-    // Then show Android popup to turn ON phone location/GPS
     final location = loc.Location();
 
     bool serviceEnabled = await location.serviceEnabled();
@@ -47,7 +52,9 @@ class LocationService {
       serviceEnabled = await location.requestService();
 
       if (serviceEnabled) {
-        await Future.delayed(const Duration(seconds: 2));
+        await Future.delayed(
+          const Duration(seconds: 2),
+        );
       }
     }
 
@@ -56,28 +63,36 @@ class LocationService {
     }
   }
 
-  bool _isWithinBeninCityArea(double lat, double lng) {
+  bool _isWithinBeninCityArea(
+    double lat,
+    double lng,
+  ) {
     return lat >= _minBeninLat &&
         lat <= _maxBeninLat &&
         lng >= _minBeninLng &&
         lng <= _maxBeninLng;
   }
 
-  /// Optimized coordinate fetching for speed
   Future<Position> getCurrentCoordinates() async {
     await _ensureLocationReady();
 
-    // 1. Try last known location first (Instant)
-    Position? lastKnown = await Geolocator.getLastKnownPosition();
+    final Position? lastKnown =
+        await Geolocator.getLastKnownPosition();
+
     if (lastKnown != null) {
-      final age = DateTime.now().difference(lastKnown.timestamp).inSeconds;
+      final age = DateTime.now()
+          .difference(lastKnown.timestamp)
+          .inSeconds;
+
       if (age < _freshLocationMaxAgeSeconds &&
-          _isWithinBeninCityArea(lastKnown.latitude, lastKnown.longitude)) {
+          _isWithinBeninCityArea(
+            lastKnown.latitude,
+            lastKnown.longitude,
+          )) {
         return lastKnown;
       }
     }
 
-    // 2. Request fresh position with tight timeout
     try {
       return await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
@@ -95,72 +110,110 @@ class LocationService {
     }
   }
 
-  /// Updated to accept preferExactAddress so your UI doesn't break
   Future<LocationModel> getCurrentLocation({
     bool preferExactAddress = false,
   }) async {
     final position = await getCurrentCoordinates();
-    return await reverseGeocode(
+
+    return reverseGeocode(
       latitude: position.latitude,
       longitude: position.longitude,
       preferExactAddress: preferExactAddress,
     );
   }
 
-  /// Updated with preferExactAddress parameter and clean Nigeria formatting
   Future<LocationModel> reverseGeocode({
     required double latitude,
     required double longitude,
     bool preferExactAddress = false,
   }) async {
-    final uri = Uri.https(_googleHost, '/maps/api/geocode/json', {
-      'latlng': '$latitude,$longitude',
-      'key': GooglePlacesConfig.apiKey,
-    });
+    final uri = Uri.https(
+      _googleHost,
+      '/maps/api/geocode/json',
+      {
+        'latlng': '$latitude,$longitude',
+        'key': GooglePlacesConfig.apiKey,
+      },
+    );
 
-    final response = await http.get(uri).timeout(const Duration(seconds: 10));
+    final response = await http
+        .get(uri)
+        .timeout(
+          const Duration(seconds: 10),
+        );
 
     if (response.statusCode != 200) {
       throw Exception('Failed to fetch address');
     }
 
     final data = jsonDecode(response.body);
+
     final results = data['results'] as List;
 
     if (data['status'] != 'OK' || results.isEmpty) {
       return LocationModel(
         latitude: latitude,
         longitude: longitude,
-        address: "$latitude, $longitude",
-        shortAddress: "Pinned Location",
+        address: '$latitude, $longitude',
+        shortAddress: 'Pinned Location',
       );
     }
 
-    // Filter results: prioritize non-unnamed, non-plus-code results
-    var bestResult = results.firstWhere((res) {
-      final addr = res['formatted_address'].toString().toLowerCase();
-      return !addr.contains('unnamed') && !addr.contains('+');
-    }, orElse: () => results.first);
+    var bestResult = results.firstWhere(
+      (res) {
+        final address =
+            res['formatted_address']
+                .toString()
+                .toLowerCase();
 
-    // If they want exact address, we check if there's a more specific street address result
+        return !address.contains('unnamed') &&
+            !address.contains('+');
+      },
+      orElse: () => results.first,
+    );
+
     if (preferExactAddress) {
-      final streetAddr = results.firstWhere(
-        (res) => (res['types'] as List).contains('street_address'),
+      final streetAddress = results.firstWhere(
+        (res) {
+          final types = res['types'] as List;
+
+          return types.contains(
+            'street_address',
+          );
+        },
         orElse: () => bestResult,
       );
-      bestResult = streetAddr;
+
+      bestResult = streetAddress;
     }
 
-    String fullAddress = bestResult['formatted_address'];
+    final String fullAddress =
+        bestResult['formatted_address'];
 
-    String? city, state, country;
-    final components = bestResult['address_components'] as List;
-    for (var comp in components) {
-      final types = List<String>.from(comp['types']);
-      if (types.contains('locality')) city = comp['long_name'];
-      if (types.contains('administrative_area_level_1'))
+    String? city;
+    String? state;
+    String? country;
+
+    final components =
+        bestResult['address_components'] as List;
+
+    for (final comp in components) {
+      final types =
+          List<String>.from(comp['types']);
+
+      if (types.contains('locality')) {
+        city = comp['long_name'];
+      }
+
+      if (types.contains(
+        'administrative_area_level_1',
+      )) {
         state = comp['long_name'];
-      if (types.contains('country')) country = comp['long_name'];
+      }
+
+      if (types.contains('country')) {
+        country = comp['long_name'];
+      }
     }
 
     return LocationModel(
@@ -168,68 +221,142 @@ class LocationService {
       longitude: longitude,
       address: fullAddress,
       shortAddress: fullAddress.split(',').first,
-      city: city ?? "Benin City",
-      state: state ?? "Edo",
-      country: country ?? "Nigeria",
+      city: city ?? 'Benin City',
+      state: state ?? 'Edo',
+      country: country ?? 'Nigeria',
     );
   }
 
-  Future<List<LocationSuggestionModel>> searchAddresses(String query) async {
-    if (query.isEmpty) return [];
+  /// Search addresses around Benin City.
+  ///
+  /// 30km gives wide Benin coverage without extending the
+  /// autocomplete search unnecessarily far outside the city.
+  Future<List<LocationSuggestionModel>> searchAddresses(
+    String query,
+  ) async {
+    final cleanQuery = query.trim();
 
-    final uri = Uri.https(_googleHost, '/maps/api/place/autocomplete/json', {
-      'input': query,
-      'key': GooglePlacesConfig.apiKey,
-      'components': 'country:ng',
-      'location': '$_beninLat,$_beninLng',
-      'radius': '15000',
-      'strictbounds': 'true',
-    });
+    if (cleanQuery.isEmpty) {
+      return [];
+    }
 
-    final response = await http.get(uri);
-    final data = jsonDecode(response.body);
+    final uri = Uri.https(
+      _googleHost,
+      '/maps/api/place/autocomplete/json',
+      {
+        'input': cleanQuery,
+        'key': GooglePlacesConfig.apiKey,
 
-    if (data['status'] != 'OK') return [];
+        // Nigeria only
+        'components': 'country:ng',
 
-    final predictions = data['predictions'] as List;
-    return predictions.map((item) {
-      final structured = item['structured_formatting'] ?? {};
-      return LocationSuggestionModel(
-        placeId: item['place_id'] ?? '',
-        title: structured['main_text'] ?? '',
-        subtitle: structured['secondary_text'] ?? '',
-      );
-    }).toList();
+        // Center of Benin City
+        'location': '$_beninLat,$_beninLng',
+
+        // 30km around Benin
+        'radius': '30000',
+
+        // Do not allow autocomplete outside this area
+        'strictbounds': 'true',
+      },
+    );
+
+    try {
+      final response = await http
+          .get(uri)
+          .timeout(
+            const Duration(seconds: 10),
+          );
+
+      if (response.statusCode != 200) {
+        return [];
+      }
+
+      final data = jsonDecode(response.body);
+
+      final status = data['status'];
+
+      if (status != 'OK' &&
+          status != 'ZERO_RESULTS') {
+        return [];
+      }
+
+      final predictions =
+          data['predictions'] as List? ?? [];
+
+      return predictions.map((item) {
+        final structured =
+            item['structured_formatting'] ?? {};
+
+        return LocationSuggestionModel(
+          placeId: item['place_id'] ?? '',
+          title: structured['main_text'] ?? '',
+          subtitle:
+              structured['secondary_text'] ?? '',
+        );
+      }).toList();
+    } catch (e) {
+      return [];
+    }
   }
 
-  Future<LocationModel> getPlaceDetails(String placeId) async {
-    final uri = Uri.https(_googleHost, '/maps/api/place/details/json', {
-      'place_id': placeId,
-      'fields': 'formatted_address,name,geometry,address_component',
-      'key': GooglePlacesConfig.apiKey,
-    });
+  Future<LocationModel> getPlaceDetails(
+    String placeId,
+  ) async {
+    final uri = Uri.https(
+      _googleHost,
+      '/maps/api/place/details/json',
+      {
+        'place_id': placeId,
+        'fields':
+            'formatted_address,name,geometry,address_component',
+        'key': GooglePlacesConfig.apiKey,
+      },
+    );
 
-    final response = await http.get(uri);
+    final response = await http
+        .get(uri)
+        .timeout(
+          const Duration(seconds: 10),
+        );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to fetch place');
+    }
+
     final data = jsonDecode(response.body);
 
-    if (data['status'] != 'OK') throw Exception('Place not found');
+    if (data['status'] != 'OK') {
+      throw Exception('Place not found');
+    }
 
     final result = data['result'];
-    final loc = result['geometry']['location'];
+
+    final location =
+        result['geometry']['location'];
 
     return LocationModel(
-      latitude: (loc['lat'] as num).toDouble(),
-      longitude: (loc['lng'] as num).toDouble(),
-      address: result['formatted_address'] ?? '',
-      shortAddress: result['name'] ?? '',
+      latitude:
+          (location['lat'] as num).toDouble(),
+      longitude:
+          (location['lng'] as num).toDouble(),
+      address:
+          result['formatted_address'] ?? '',
+      shortAddress:
+          result['name'] ?? '',
     );
   }
 
-  void startLiveTracking(void Function(Position position) onUpdate) {
+  void startLiveTracking(
+    void Function(Position position) onUpdate,
+  ) {
     _liveLocationSubscription?.cancel();
-    _liveLocationSubscription = Geolocator.getPositionStream(
+
+    _liveLocationSubscription =
+        Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.bestForNavigation,
+        accuracy:
+            LocationAccuracy.bestForNavigation,
         distanceFilter: 5,
       ),
     ).listen(onUpdate);
@@ -254,19 +381,26 @@ class LocationService {
       uri,
       headers: {
         'Content-Type': 'application/json',
-        'X-Goog-Api-Key': GooglePlacesConfig.apiKey,
+        'X-Goog-Api-Key':
+            GooglePlacesConfig.apiKey,
         'X-Goog-FieldMask':
             'routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline',
       },
       body: jsonEncode({
         'origin': {
           'location': {
-            'latLng': {'latitude': originLat, 'longitude': originLng},
+            'latLng': {
+              'latitude': originLat,
+              'longitude': originLng,
+            },
           },
         },
         'destination': {
           'location': {
-            'latLng': {'latitude': destinationLat, 'longitude': destinationLng},
+            'latLng': {
+              'latitude': destinationLat,
+              'longitude': destinationLng,
+            },
           },
         },
         'travelMode': 'DRIVE',
@@ -274,13 +408,32 @@ class LocationService {
       }),
     );
 
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Failed to calculate route',
+      );
+    }
+
     final data = jsonDecode(response.body);
-    final route = data['routes'][0];
+
+    final routes = data['routes'] as List?;
+
+    if (routes == null || routes.isEmpty) {
+      throw Exception('No route found');
+    }
+
+    final route = routes.first;
 
     return RouteResult(
-      distanceMeters: (route['distanceMeters'] as num).toDouble(),
-      durationText: route['duration'] ?? '0s',
-      encodedPolyline: route['polyline']['encodedPolyline'] ?? '',
+      distanceMeters:
+          (route['distanceMeters'] as num)
+              .toDouble(),
+      durationText:
+          route['duration'] ?? '0s',
+      encodedPolyline:
+          route['polyline']
+                  ?['encodedPolyline'] ??
+              '',
     );
   }
 }
@@ -296,5 +449,6 @@ class RouteResult {
     required this.encodedPolyline,
   });
 
-  double get distanceKm => distanceMeters / 1000;
+  double get distanceKm =>
+      distanceMeters / 1000;
 }

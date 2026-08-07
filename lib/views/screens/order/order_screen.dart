@@ -212,24 +212,26 @@ class _OrderScreenState extends State<OrderScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: maxWidth),
-          child: Column(
-            children: [
-              _OrdersArtHeader(
-                selectedTab: selectedTab,
-                tabs: tabs,
-                pendingCount: _orders.where(_isPendingOrder).length,
-                ongoingCount: _orders.where(_isOngoingOrder).length,
-                completedCount: _orders.where(_isCompletedOrder).length,
-                onTabChanged: (index) {
-                  HapticFeedback.selectionClick();
-                  setState(() => selectedTab = index);
-                },
-              ),
-              Expanded(child: _buildBody(orders)),
-            ],
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxWidth),
+            child: Column(
+              children: [
+                _OrdersArtHeader(
+                  selectedTab: selectedTab,
+                  tabs: tabs,
+                  pendingCount: _orders.where(_isPendingOrder).length,
+                  ongoingCount: _orders.where(_isOngoingOrder).length,
+                  completedCount: _orders.where(_isCompletedOrder).length,
+                  onTabChanged: (index) {
+                    HapticFeedback.selectionClick();
+                    setState(() => selectedTab = index);
+                  },
+                ),
+                Expanded(child: _buildBody(orders)),
+              ],
+            ),
           ),
         ),
       ),
