@@ -212,26 +212,24 @@ class _OrderScreenState extends State<OrderScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: maxWidth),
-            child: Column(
-              children: [
-                _OrdersArtHeader(
-                  selectedTab: selectedTab,
-                  tabs: tabs,
-                  pendingCount: _orders.where(_isPendingOrder).length,
-                  ongoingCount: _orders.where(_isOngoingOrder).length,
-                  completedCount: _orders.where(_isCompletedOrder).length,
-                  onTabChanged: (index) {
-                    HapticFeedback.selectionClick();
-                    setState(() => selectedTab = index);
-                  },
-                ),
-                Expanded(child: _buildBody(orders)),
-              ],
-            ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxWidth),
+          child: Column(
+            children: [
+              _OrdersArtHeader(
+                selectedTab: selectedTab,
+                tabs: tabs,
+                pendingCount: _orders.where(_isPendingOrder).length,
+                ongoingCount: _orders.where(_isOngoingOrder).length,
+                completedCount: _orders.where(_isCompletedOrder).length,
+                onTabChanged: (index) {
+                  HapticFeedback.selectionClick();
+                  setState(() => selectedTab = index);
+                },
+              ),
+              Expanded(child: _buildBody(orders)),
+            ],
           ),
         ),
       ),
@@ -1178,7 +1176,12 @@ class _OrdersArtHeader extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.fromLTRB(r(20), r(18), r(20), r(20)),
+padding: EdgeInsets.fromLTRB(
+  r(20),
+  MediaQuery.paddingOf(context).top + r(24),
+  r(20),
+  r(20),
+),
       decoration: const BoxDecoration(color: AppColors.brandBlueDark),
       child: Stack(
         children: [

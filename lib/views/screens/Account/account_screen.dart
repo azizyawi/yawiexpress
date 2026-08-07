@@ -214,7 +214,12 @@ class _AccountHeader extends StatelessWidget {
           ),
 
           Padding(
-            padding: EdgeInsets.fromLTRB(r(20), r(32), r(20), r(20)),
+            padding: EdgeInsets.fromLTRB(
+    r(20),
+    MediaQuery.paddingOf(context).top + r(24),
+    r(20),
+    r(20),
+  ),
 
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
