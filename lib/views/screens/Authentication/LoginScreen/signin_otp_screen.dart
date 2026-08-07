@@ -66,6 +66,7 @@ class _SignInOtpScreenState extends State<SignInOtpScreen>
 
   bool _isVerifying = false;
   bool _isResending = false;
+
   String _session = '';
 
   @override
@@ -73,8 +74,16 @@ class _SignInOtpScreenState extends State<SignInOtpScreen>
     super.initState();
 
     _session = widget.session;
-    _controllers = List.generate(_otpLength, (_) => TextEditingController());
-    _focusNodes = List.generate(_otpLength, (_) => FocusNode());
+
+    _controllers = List.generate(
+      _otpLength,
+      (_) => TextEditingController(),
+    );
+
+    _focusNodes = List.generate(
+      _otpLength,
+      (_) => FocusNode(),
+    );
 
     for (final node in _focusNodes) {
       node.addListener(_refresh);
@@ -87,42 +96,72 @@ class _SignInOtpScreenState extends State<SignInOtpScreen>
 
     _headerOpacity = CurvedAnimation(
       parent: _pageController,
-      curve: const Interval(0.0, 0.35, curve: Curves.easeOut),
+      curve: const Interval(
+        0.0,
+        0.35,
+        curve: Curves.easeOut,
+      ),
     );
 
-    _headerOffset =
-        Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: _pageController,
-            curve: const Interval(0.0, 0.42, curve: Curves.easeOutCubic),
-          ),
-        );
+    _headerOffset = Tween<Offset>(
+      begin: const Offset(0, 0.08),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _pageController,
+        curve: const Interval(
+          0.0,
+          0.42,
+          curve: Curves.easeOutCubic,
+        ),
+      ),
+    );
 
     _contentOpacity = CurvedAnimation(
       parent: _pageController,
-      curve: const Interval(0.2, 0.72, curve: Curves.easeOut),
+      curve: const Interval(
+        0.2,
+        0.72,
+        curve: Curves.easeOut,
+      ),
     );
 
-    _contentOffset =
-        Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: _pageController,
-            curve: const Interval(0.2, 0.75, curve: Curves.easeOutCubic),
-          ),
-        );
+    _contentOffset = Tween<Offset>(
+      begin: const Offset(0, 0.08),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _pageController,
+        curve: const Interval(
+          0.2,
+          0.75,
+          curve: Curves.easeOutCubic,
+        ),
+      ),
+    );
 
     _buttonOpacity = CurvedAnimation(
       parent: _pageController,
-      curve: const Interval(0.45, 1.0, curve: Curves.easeOut),
+      curve: const Interval(
+        0.45,
+        1.0,
+        curve: Curves.easeOut,
+      ),
     );
 
-    _buttonOffset =
-        Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: _pageController,
-            curve: const Interval(0.45, 1.0, curve: Curves.easeOutCubic),
-          ),
-        );
+    _buttonOffset = Tween<Offset>(
+      begin: const Offset(0, 0.08),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _pageController,
+        curve: const Interval(
+          0.45,
+          1.0,
+          curve: Curves.easeOutCubic,
+        ),
+      ),
+    );
 
     _pageController.forward();
     _startCountdown();
@@ -135,31 +174,40 @@ class _SignInOtpScreenState extends State<SignInOtpScreen>
   }
 
   void _refresh() {
-    if (mounted) setState(() {});
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void _startCountdown() {
     _timer?.cancel();
+
     _secondsLeft = 15;
 
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) return;
+    _timer = Timer.periodic(
+      const Duration(seconds: 1),
+      (timer) {
+        if (!mounted) return;
 
-      if (_secondsLeft <= 1) {
-        timer.cancel();
-        setState(() {
-          _secondsLeft = 0;
-        });
-      } else {
-        setState(() {
-          _secondsLeft--;
-        });
-      }
-    });
+        if (_secondsLeft <= 1) {
+          timer.cancel();
+
+          setState(() {
+            _secondsLeft = 0;
+          });
+        } else {
+          setState(() {
+            _secondsLeft--;
+          });
+        }
+      },
+    );
   }
 
   bool get _isOtpComplete {
-    return _controllers.every((controller) => controller.text.isNotEmpty);
+    return _controllers.every(
+      (controller) => controller.text.isNotEmpty,
+    );
   }
 
   String get _otpCode {
@@ -172,9 +220,57 @@ class _SignInOtpScreenState extends State<SignInOtpScreen>
       return;
     }
 
-    final digit = value.characters.last;
-    _controllers[index].text = digit;
-    _controllers[index].selection = TextSelection.fromPosition(
+    final digits = value.replaceAll(
+      RegExp(r'[^0-9]'),
+      '',
+    );
+
+    if (digits.isEmpty) {
+      return;
+    }
+
+    // Handles pasted OTP.
+    //
+    // Example:
+    // User pastes 4827
+    //
+    // Result:
+    // [4] [8] [2] [7]
+    if (digits.length > 1) {
+      final availableSlots = _otpLength - index;
+
+      final digitsToInsert = digits.length > availableSlots
+          ? digits.substring(0, availableSlots)
+          : digits;
+
+      for (int i = 0; i < digitsToInsert.length; i++) {
+        final targetIndex = index + i;
+
+        _controllers[targetIndex].text = digitsToInsert[i];
+
+        _controllers[targetIndex].selection =
+            TextSelection.fromPosition(
+          const TextPosition(offset: 1),
+        );
+      }
+
+      final nextIndex = index + digitsToInsert.length;
+
+      if (nextIndex < _otpLength) {
+        _focusNodes[nextIndex].requestFocus();
+      } else {
+        FocusScope.of(context).unfocus();
+      }
+
+      setState(() {});
+      return;
+    }
+
+    // Normal one-digit typing.
+    _controllers[index].text = digits;
+
+    _controllers[index].selection =
+        TextSelection.fromPosition(
       const TextPosition(offset: 1),
     );
 
@@ -190,26 +286,33 @@ class _SignInOtpScreenState extends State<SignInOtpScreen>
   void _onBackspace(int index) {
     if (_controllers[index].text.isNotEmpty) {
       _controllers[index].clear();
+
       setState(() {});
       return;
     }
 
     if (index > 0) {
       _focusNodes[index - 1].requestFocus();
+
       _controllers[index - 1].clear();
+
       setState(() {});
     }
   }
 
   Future<void> _resendCode() async {
-    if (_secondsLeft > 0 || _isResending) return;
+    if (_secondsLeft > 0 || _isResending) {
+      return;
+    }
 
     setState(() {
       _isResending = true;
     });
 
     final result = await AuthService.signInStart(
-      SignInStartRequest(phoneNumber: widget.phoneNumber),
+      SignInStartRequest(
+        phoneNumber: widget.phoneNumber,
+      ),
     );
 
     if (!mounted) return;
@@ -225,8 +328,12 @@ class _SignInOtpScreenState extends State<SignInOtpScreen>
         controller.clear();
       }
 
-      FocusScope.of(context).requestFocus(_focusNodes.first);
+      FocusScope.of(context).requestFocus(
+        _focusNodes.first,
+      );
+
       _startCountdown();
+
       _showMessage(
         result['message'] ?? 'Code resent successfully',
         type: AppSnackBarType.success,
@@ -247,16 +354,20 @@ class _SignInOtpScreenState extends State<SignInOtpScreen>
         'Please enter the complete 4-digit code',
         type: AppSnackBarType.warning,
       );
+
       return;
     }
 
-    if (_isVerifying) return;
+    if (_isVerifying) {
+      return;
+    }
 
     setState(() {
       _isVerifying = true;
     });
 
-    final result = await AuthService.verifySignInOtpAndSaveUser(
+    final result =
+        await AuthService.verifySignInOtpAndSaveUser(
       SignInVerifyRequest(
         phoneNumber: widget.phoneNumber,
         code: _otpCode,
@@ -269,16 +380,21 @@ class _SignInOtpScreenState extends State<SignInOtpScreen>
     if (result['success'] == true) {
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (_) => const MainScreen()),
+        MaterialPageRoute(
+          builder: (_) => const MainScreen(),
+        ),
         (route) => false,
       );
+
       return;
     }
 
-    final newSession = (result['session'] ?? '').toString();
+    final newSession =
+        (result['session'] ?? '').toString();
 
     setState(() {
       _isVerifying = false;
+
       if (newSession.isNotEmpty) {
         _session = newSession;
       }
@@ -288,7 +404,9 @@ class _SignInOtpScreenState extends State<SignInOtpScreen>
       controller.clear();
     }
 
-    FocusScope.of(context).requestFocus(_focusNodes.first);
+    FocusScope.of(context).requestFocus(
+      _focusNodes.first,
+    );
 
     _showMessage(
       result['message'] ?? 'Verification failed',
@@ -300,7 +418,11 @@ class _SignInOtpScreenState extends State<SignInOtpScreen>
     String message, {
     AppSnackBarType type = AppSnackBarType.info,
   }) {
-    AppSnackBar.show(context, message: message, type: type);
+    AppSnackBar.show(
+      context,
+      message: message,
+      type: type,
+    );
   }
 
   @override
@@ -318,12 +440,14 @@ class _SignInOtpScreenState extends State<SignInOtpScreen>
     }
 
     _pageController.dispose();
+
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final s = _scale(context);
+
     double r(double value) => value * s;
 
     final canResend = _secondsLeft == 0;
@@ -335,22 +459,32 @@ class _SignInOtpScreenState extends State<SignInOtpScreen>
         child: Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: _maxContentWidth(context)),
+            constraints: BoxConstraints(
+              maxWidth: _maxContentWidth(context),
+            ),
             child: Padding(
-              padding: EdgeInsets.only(left: r(16), right: r(16)),
+              padding: EdgeInsets.only(
+                left: r(16),
+                right: r(16),
+              ),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
                 children: [
                   SizedBox(height: r(14)),
+
                   FadeTransition(
                     opacity: _headerOpacity,
                     child: _BackButtonCircle(
                       onTap: _isVerifying
                           ? () {}
-                          : () => Navigator.pop(context),
+                          : () =>
+                              Navigator.pop(context),
                     ),
                   ),
+
                   SizedBox(height: r(42)),
+
                   Expanded(
                     child: Column(
                       children: [
@@ -362,56 +496,85 @@ class _SignInOtpScreenState extends State<SignInOtpScreen>
                               children: [
                                 Text(
                                   'Verify your number',
-                                  textAlign: TextAlign.center,
+                                  textAlign:
+                                      TextAlign.center,
                                   maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.montserrat(
+                                  overflow:
+                                      TextOverflow.ellipsis,
+                                  style:
+                                      GoogleFonts.montserrat(
                                     fontSize: r(31),
-                                    fontWeight: FontWeight.w800,
+                                    fontWeight:
+                                        FontWeight.w800,
                                     height: 1.12,
-                                    color: AppColors.textPrimary,
+                                    color: AppColors
+                                        .textPrimary,
                                   ),
                                 ),
+
                                 SizedBox(height: r(16)),
+
                                 Padding(
-                                  padding: EdgeInsets.symmetric(
+                                  padding:
+                                      EdgeInsets.symmetric(
                                     horizontal: r(12),
                                   ),
                                   child: RichText(
-                                    textAlign: TextAlign.center,
+                                    textAlign:
+                                        TextAlign.center,
                                     text: TextSpan(
-                                      style: GoogleFonts.montserrat(
+                                      style: GoogleFonts
+                                          .montserrat(
                                         fontSize: r(16),
-                                        fontWeight: FontWeight.w500,
+                                        fontWeight:
+                                            FontWeight.w500,
                                         height: 1.6,
-                                        color: AppColors.textSecondary,
+                                        color: AppColors
+                                            .textSecondary,
                                       ),
                                       children: [
                                         const TextSpan(
                                           text:
                                               "We've sent a 4-digit verification code for ",
                                         ),
+
                                         TextSpan(
-                                          text: widget.phoneNumber,
-                                          style: GoogleFonts.montserrat(
+                                          text: widget
+                                              .phoneNumber,
+                                          style: GoogleFonts
+                                              .montserrat(
                                             fontSize: r(16),
-                                            fontWeight: FontWeight.w700,
+                                            fontWeight:
+                                                FontWeight
+                                                    .w700,
                                             height: 1.6,
-                                            color: AppColors.textPrimary,
+                                            color: AppColors
+                                                .textPrimary,
                                           ),
                                         ),
-                                        const TextSpan(text: " to your "),
-                                        TextSpan(
-                                          text: 'email and SMS',
-                                          style: GoogleFonts.montserrat(
-                                            fontSize: r(16),
-                                            fontWeight: FontWeight.w700,
-                                            height: 1.6,
-                                            color: AppColors.brandBlueDark,
-                                          ),
-                                        ),
+
                                         const TextSpan(
-                                          text: '. Enter the code below.',
+                                          text: " to your ",
+                                        ),
+
+                                        TextSpan(
+                                          text:
+                                              'email and SMS',
+                                          style: GoogleFonts
+                                              .montserrat(
+                                            fontSize: r(16),
+                                            fontWeight:
+                                                FontWeight
+                                                    .w700,
+                                            height: 1.6,
+                                            color: AppColors
+                                                .brandBlueDark,
+                                          ),
+                                        ),
+
+                                        const TextSpan(
+                                          text:
+                                              '. Enter the code below.',
                                         ),
                                       ],
                                     ),
@@ -421,7 +584,9 @@ class _SignInOtpScreenState extends State<SignInOtpScreen>
                             ),
                           ),
                         ),
+
                         SizedBox(height: r(110)),
+
                         SlideTransition(
                           position: _contentOffset,
                           child: FadeTransition(
@@ -430,72 +595,121 @@ class _SignInOtpScreenState extends State<SignInOtpScreen>
                               children: [
                                 RichText(
                                   text: TextSpan(
-                                    style: GoogleFonts.montserrat(
+                                    style: GoogleFonts
+                                        .montserrat(
                                       fontSize: r(16),
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.label,
+                                      fontWeight:
+                                          FontWeight.w700,
+                                      color:
+                                          AppColors.label,
                                     ),
                                     children: [
-                                      const TextSpan(text: 'Enter code'),
+                                      const TextSpan(
+                                        text: 'Enter code',
+                                      ),
                                       TextSpan(
                                         text: ' *',
-                                        style: GoogleFonts.montserrat(
+                                        style: GoogleFonts
+                                            .montserrat(
                                           fontSize: r(16),
-                                          fontWeight: FontWeight.w700,
-                                          color: AppColors.error,
+                                          fontWeight:
+                                              FontWeight
+                                                  .w700,
+                                          color:
+                                              AppColors.error,
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
+
                                 SizedBox(height: r(8)),
+
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment
+                                          .center,
                                   children: List.generate(
                                     _otpLength,
                                     (index) => Padding(
-                                      padding: EdgeInsets.only(
-                                        right: index == _otpLength - 1
-                                            ? 0
-                                            : r(8),
+                                      padding:
+                                          EdgeInsets.only(
+                                        right:
+                                            index ==
+                                                    _otpLength -
+                                                        1
+                                                ? 0
+                                                : r(8),
                                       ),
                                       child: _OtpDigitField(
-                                        controller: _controllers[index],
-                                        focusNode: _focusNodes[index],
-                                        isFocused: _focusNodes[index].hasFocus,
+                                        controller:
+                                            _controllers[
+                                                index],
+                                        focusNode:
+                                            _focusNodes[
+                                                index],
+                                        isFocused:
+                                            _focusNodes[
+                                                    index]
+                                                .hasFocus,
                                         hasValue:
-                                            _controllers[index].text.isNotEmpty,
-                                        onChanged: (value) =>
-                                            _onChanged(value, index),
-                                        onBackspace: () => _onBackspace(index),
+                                            _controllers[
+                                                    index]
+                                                .text
+                                                .isNotEmpty,
+                                        onChanged:
+                                            (value) =>
+                                                _onChanged(
+                                          value,
+                                          index,
+                                        ),
+                                        onBackspace: () =>
+                                            _onBackspace(
+                                          index,
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
+
                                 SizedBox(height: r(30)),
+
                                 GestureDetector(
-                                  onTap: (canResend && !_isResending)
+                                  onTap: (canResend &&
+                                          !_isResending)
                                       ? _resendCode
                                       : null,
-                                  behavior: HitTestBehavior.opaque,
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 220),
+                                  behavior:
+                                      HitTestBehavior.opaque,
+                                  child:
+                                      AnimatedContainer(
+                                    duration:
+                                        const Duration(
+                                      milliseconds: 220,
+                                    ),
                                     curve: Curves.easeOut,
                                     height: r(52),
-                                    padding: EdgeInsets.symmetric(
+                                    padding:
+                                        EdgeInsets.symmetric(
                                       horizontal: r(24),
                                     ),
-                                    decoration: BoxDecoration(
+                                    decoration:
+                                        BoxDecoration(
                                       color: canResend
                                           ? AppColors.infoBg
-                                          : AppColors.inputFill,
-                                      borderRadius: BorderRadius.circular(
+                                          : AppColors
+                                              .inputFill,
+                                      borderRadius:
+                                          BorderRadius
+                                              .circular(
                                         r(28),
                                       ),
                                       border: Border.all(
                                         color: canResend
-                                            ? AppColors.infoBorder
-                                            : Colors.transparent,
+                                            ? AppColors
+                                                .infoBorder
+                                            : Colors
+                                                .transparent,
                                         width: r(1),
                                       ),
                                     ),
@@ -506,29 +720,40 @@ class _SignInOtpScreenState extends State<SignInOtpScreen>
                                               height: r(18),
                                               child:
                                                   const CircularProgressIndicator(
-                                                    strokeWidth: 2,
-                                                    valueColor:
-                                                        AlwaysStoppedAnimation<
-                                                          Color
-                                                        >(
-                                                          AppColors
-                                                              .brandBlueDark,
-                                                        ),
-                                                  ),
+                                                strokeWidth:
+                                                    2,
+                                                valueColor:
+                                                    AlwaysStoppedAnimation<
+                                                        Color>(
+                                                  AppColors
+                                                      .brandBlueDark,
+                                                ),
+                                              ),
                                             )
                                           : Text(
                                               canResend
                                                   ? 'Resend verification code'
                                                   : 'Resend verification code (${_secondsLeft}s)',
-                                              textAlign: TextAlign.center,
+                                              textAlign:
+                                                  TextAlign
+                                                      .center,
                                               maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: GoogleFonts.montserrat(
-                                                fontSize: r(14),
-                                                fontWeight: FontWeight.w700,
+                                              overflow:
+                                                  TextOverflow
+                                                      .ellipsis,
+                                              style:
+                                                  GoogleFonts
+                                                      .montserrat(
+                                                fontSize:
+                                                    r(14),
+                                                fontWeight:
+                                                    FontWeight
+                                                        .w700,
                                                 color: canResend
-                                                    ? AppColors.brandBlueDark
-                                                    : AppColors.textHint,
+                                                    ? AppColors
+                                                        .brandBlueDark
+                                                    : AppColors
+                                                        .textHint,
                                               ),
                                             ),
                                     ),
@@ -541,6 +766,7 @@ class _SignInOtpScreenState extends State<SignInOtpScreen>
                       ],
                     ),
                   ),
+
                   SlideTransition(
                     position: _buttonOffset,
                     child: FadeTransition(
@@ -549,26 +775,37 @@ class _SignInOtpScreenState extends State<SignInOtpScreen>
                         width: double.infinity,
                         height: r(60),
                         child: ElevatedButton(
-                          onPressed: (_isOtpComplete && !_isVerifying)
+                          onPressed: (_isOtpComplete &&
+                                  !_isVerifying)
                               ? _verifyCode
                               : null,
-                          style: ElevatedButton.styleFrom(
+                          style:
+                              ElevatedButton.styleFrom(
                             elevation: 0,
-                            backgroundColor: AppColors.brandBlueDark,
-                            disabledBackgroundColor: AppColors.brandBlueDark
-                                .withOpacity(0.35),
+                            backgroundColor:
+                                AppColors.brandBlueDark,
+                            disabledBackgroundColor:
+                                AppColors.brandBlueDark
+                                    .withOpacity(0.35),
                             foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(r(16)),
+                            shape:
+                                RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(
+                                r(16),
+                              ),
                             ),
                           ),
                           child: _isVerifying
                               ? SizedBox(
                                   width: r(22),
                                   height: r(22),
-                                  child: const CircularProgressIndicator(
+                                  child:
+                                      const CircularProgressIndicator(
                                     strokeWidth: 2.4,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                    valueColor:
+                                        AlwaysStoppedAnimation<
+                                            Color>(
                                       Colors.white,
                                     ),
                                   ),
@@ -576,10 +813,14 @@ class _SignInOtpScreenState extends State<SignInOtpScreen>
                               : Text(
                                   'Verify',
                                   maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.montserrat(
+                                  overflow:
+                                      TextOverflow
+                                          .ellipsis,
+                                  style:
+                                      GoogleFonts.montserrat(
                                     fontSize: r(18),
-                                    fontWeight: FontWeight.w700,
+                                    fontWeight:
+                                        FontWeight.w700,
                                     color: Colors.white,
                                   ),
                                 ),
@@ -587,6 +828,7 @@ class _SignInOtpScreenState extends State<SignInOtpScreen>
                       ),
                     ),
                   ),
+
                   SizedBox(height: r(32)),
                 ],
               ),
@@ -618,6 +860,7 @@ class _OtpDigitField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = _scale(context);
+
     double r(double value) => value * s;
 
     return AnimatedContainer(
@@ -627,19 +870,22 @@ class _OtpDigitField extends StatelessWidget {
       height: r(60),
       decoration: BoxDecoration(
         color: AppColors.inputFill,
-        borderRadius: BorderRadius.circular(r(16)),
+        borderRadius: BorderRadius.circular(
+          r(16),
+        ),
         border: Border.all(
           color: isFocused
               ? AppColors.brandBlueDark
               : hasValue
-              ? AppColors.infoBorder
-              : AppColors.inputBorder,
+                  ? AppColors.infoBorder
+                  : AppColors.inputBorder,
           width: isFocused ? r(1.5) : r(1),
         ),
         boxShadow: isFocused
             ? [
                 BoxShadow(
-                  color: AppColors.brandBlueDark.withOpacity(0.10),
+                  color: AppColors.brandBlueDark
+                      .withOpacity(0.10),
                   blurRadius: r(18),
                   offset: const Offset(0, 6),
                 ),
@@ -650,29 +896,47 @@ class _OtpDigitField extends StatelessWidget {
         child: Focus(
           onKeyEvent: (_, event) {
             if (event is KeyDownEvent &&
-                event.logicalKey == LogicalKeyboardKey.backspace) {
+                event.logicalKey ==
+                    LogicalKeyboardKey.backspace) {
               onBackspace();
+
               return KeyEventResult.handled;
             }
+
             return KeyEventResult.ignored;
           },
           child: TextField(
             controller: controller,
             focusNode: focusNode,
+
             keyboardType: TextInputType.number,
+
+            // Helps iOS detect SMS OTP codes.
+            autofillHints: const [
+              AutofillHints.oneTimeCode,
+            ],
+
             textAlign: TextAlign.center,
             cursorColor: Colors.black,
-            selectionControls: materialTextSelectionControls,
+
+            selectionControls:
+                materialTextSelectionControls,
+
             onChanged: onChanged,
+
+            // IMPORTANT:
+            // Do not limit this field to one character.
+            // It must temporarily receive the full pasted OTP.
             inputFormatters: [
               FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(1),
             ],
+
             style: GoogleFonts.montserrat(
               fontSize: r(22),
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,
             ),
+
             decoration: const InputDecoration(
               border: InputBorder.none,
               counterText: '',
@@ -687,11 +951,14 @@ class _OtpDigitField extends StatelessWidget {
 class _BackButtonCircle extends StatelessWidget {
   final VoidCallback onTap;
 
-  const _BackButtonCircle({required this.onTap});
+  const _BackButtonCircle({
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final s = _scale(context);
+
     double r(double value) => value * s;
 
     return GestureDetector(
