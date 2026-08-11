@@ -15,7 +15,7 @@ class PushNotificationService {
   static final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
-  static const String _channelId = 'wanmac_rider_orders_v4';
+  static const String _channelId = 'wanmac_rider_orders_v8';
   static const String _channelName = 'WANMAC Notifications';
   static const String _channelDescription =
       'Notifications for Wanmac updates and deliveries';

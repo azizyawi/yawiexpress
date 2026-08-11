@@ -67,6 +67,12 @@ class SendPackageController extends ChangeNotifier {
 
   bool isGettingCurrentLocation = false;
   bool isSearchingAddresses = false;
+
+  // Address-search UI state.
+  // This lets the address screen distinguish a real "no results" response
+  // from a temporary network failure.
+  bool hasAddressNetworkError = false;
+
   bool isCalculatingRoute = false;
   bool isCreatingPickupRequest = false;
   bool isCreatingDropoffRequest = false;
@@ -141,6 +147,9 @@ class SendPackageController extends ChangeNotifier {
 
   Timer? _pickupPollingTimer;
   Timer? _dropoffPollingTimer;
+
+  // Prevent an older autocomplete request from overwriting a newer search.
+  int _addressSearchRequestId = 0;
 
   double get payableAmount {
     if (promoValidatedFinalAmount != null) {
@@ -362,26 +371,63 @@ class SendPackageController extends ChangeNotifier {
   }
 
   Future<void> searchAddresses(String query) async {
-    if (query.trim().isEmpty) {
+    final cleanQuery = query.trim();
+
+    if (cleanQuery.length < 2) {
+      _addressSearchRequestId++;
       suggestions = [];
+      isSearchingAddresses = false;
+      hasAddressNetworkError = false;
       locationError = null;
       notifyListeners();
       return;
     }
 
-    try {
-      isSearchingAddresses = true;
-      locationError = null;
-      notifyListeners();
+    final requestId = ++_addressSearchRequestId;
 
-      suggestions = await _locationService.searchAddresses(query);
+    isSearchingAddresses = true;
+    hasAddressNetworkError = false;
+    locationError = null;
+    notifyListeners();
+
+    try {
+      final results = await _locationService.searchAddresses(cleanQuery);
+
+      // Ignore stale results if the user has already typed a newer query.
+      if (requestId != _addressSearchRequestId) {
+        return;
+      }
+
+      suggestions = results;
+      hasAddressNetworkError = false;
       locationError = null;
-    } catch (e) {
+    } on LocationServiceException catch (e) {
+      if (requestId != _addressSearchRequestId) {
+        return;
+      }
+
+      if (e.type == LocationServiceErrorType.network) {
+        // Do not clear previous suggestions on a temporary network failure.
+        hasAddressNetworkError = true;
+        locationError = 'Having trouble loading locations. Please try again.';
+      } else {
+        suggestions = [];
+        hasAddressNetworkError = false;
+        locationError = e.message;
+      }
+    } catch (_) {
+      if (requestId != _addressSearchRequestId) {
+        return;
+      }
+
       suggestions = [];
-      _setLocationError('Search address error: $e', notify: false);
+      hasAddressNetworkError = false;
+      locationError = 'Unable to search locations right now. Please try again.';
     } finally {
-      isSearchingAddresses = false;
-      notifyListeners();
+      if (requestId == _addressSearchRequestId) {
+        isSearchingAddresses = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -895,8 +941,17 @@ class SendPackageController extends ChangeNotifier {
   }
 
   void clearSuggestions({bool notify = true}) {
+    // Invalidate any autocomplete request that is still in flight.
+    _addressSearchRequestId++;
+
     suggestions = [];
-    if (notify) notifyListeners();
+    isSearchingAddresses = false;
+    hasAddressNetworkError = false;
+    locationError = null;
+
+    if (notify) {
+      notifyListeners();
+    }
   }
 
   @override

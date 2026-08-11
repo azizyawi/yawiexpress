@@ -108,14 +108,23 @@ class _SupportScreenState extends State<SupportScreen> {
       backgroundColor: AppColors.background,
       body: Center(
         child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: _maxContentWidth(context)),
+          constraints: BoxConstraints(
+            maxWidth: _maxContentWidth(context),
+          ),
           child: Column(
             children: [
-              _SupportHeader(onChatTap: () => _openWannyChat(context)),
+              _SupportHeader(
+                onChatTap: () => _openWannyChat(context),
+              ),
               Expanded(
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
-                  padding: EdgeInsets.fromLTRB(r(20), r(18), r(20), r(24)),
+                  padding: EdgeInsets.fromLTRB(
+                    r(20),
+                    r(18),
+                    r(20),
+                    r(24),
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -131,7 +140,9 @@ class _SupportScreenState extends State<SupportScreen> {
                       SizedBox(height: r(14)),
                       if (_isLoadingOrder)
                         Padding(
-                          padding: EdgeInsets.symmetric(vertical: r(18)),
+                          padding: EdgeInsets.symmetric(
+                            vertical: r(18),
+                          ),
                           child: const Center(
                             child: CircularProgressIndicator(
                               color: AppColors.brandBlueDark,
@@ -139,13 +150,18 @@ class _SupportScreenState extends State<SupportScreen> {
                           ),
                         )
                       else if (_recentOrder != null)
-                        _RecentOrderCard(order: _recentOrder!)
+                        _RecentOrderCard(
+                          order: _recentOrder!,
+                        )
                       else
                         _NoRecentOrderCard(
                           onTap: () => _openWannyChat(context),
                         ),
                       SizedBox(height: r(24)),
-                      Divider(color: AppColors.inputBorder, thickness: 1),
+                      Divider(
+                        color: AppColors.inputBorder,
+                        thickness: 1,
+                      ),
                       SizedBox(height: r(22)),
                       Text(
                         'Help with something else',
@@ -157,7 +173,9 @@ class _SupportScreenState extends State<SupportScreen> {
                         ),
                       ),
                       SizedBox(height: r(16)),
-                      _OtherHelpCard(onTap: () => _openWannyChat(context)),
+                      _OtherHelpCard(
+                        onTap: () => _openWannyChat(context),
+                      ),
                     ],
                   ),
                 ),
@@ -173,7 +191,9 @@ class _SupportScreenState extends State<SupportScreen> {
 class _SupportHeader extends StatelessWidget {
   final VoidCallback onChatTap;
 
-  const _SupportHeader({required this.onChatTap});
+  const _SupportHeader({
+    required this.onChatTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -185,25 +205,40 @@ class _SupportHeader extends StatelessWidget {
         MediaQuery.orientationOf(context) == Orientation.landscape;
     final isShort = size.height < 700;
 
-    final headerHeight = isLandscape || isShort ? r(170) : r(215);
+    final topPadding = MediaQuery.paddingOf(context).top;
+
+    final headerHeight =
+        topPadding + (isLandscape || isShort ? r(170) : r(215));
 
     return Container(
       height: headerHeight,
       width: double.infinity,
-      decoration: const BoxDecoration(color: AppColors.brandBlueDark),
+      decoration: const BoxDecoration(
+        color: AppColors.brandBlueDark,
+      ),
       child: Stack(
         children: [
           const Positioned.fill(
             child: IgnorePointer(
-              child: CustomPaint(painter: _HeaderPatternPainter()),
+              child: CustomPaint(
+                painter: _HeaderPatternPainter(),
+              ),
             ),
           ),
+
           Padding(
-            padding: EdgeInsets.fromLTRB(r(20), r(20), r(20), r(18)),
+            padding: EdgeInsets.fromLTRB(
+              r(20),
+              topPadding + r(20),
+              r(20),
+              r(18),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(height: isLandscape || isShort ? r(8) : r(18)),
+                SizedBox(
+                  height: isLandscape || isShort ? r(8) : r(18),
+                ),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -220,12 +255,15 @@ class _SupportHeader extends StatelessWidget {
                       ),
                     ),
                     SizedBox(width: r(12)),
-                    _ChatButton(onTap: onChatTap),
+                    _ChatButton(
+                      onTap: onChatTap,
+                    ),
                   ],
                 ),
               ],
             ),
           ),
+
           Positioned(
             bottom: 0,
             left: 0,
@@ -246,7 +284,9 @@ class _SupportHeader extends StatelessWidget {
 class _ChatButton extends StatelessWidget {
   final VoidCallback onTap;
 
-  const _ChatButton({required this.onTap});
+  const _ChatButton({
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -260,7 +300,10 @@ class _ChatButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(r(28)),
         onTap: onTap,
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: r(18), vertical: r(12)),
+          padding: EdgeInsets.symmetric(
+            horizontal: r(18),
+            vertical: r(12),
+          ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -272,7 +315,12 @@ class _ChatButton extends StatelessWidget {
               SizedBox(width: r(8)),
               Text(
                 'Chat with Wanny',
-                style: _T.text(context, 15, FontWeight.w700, AppColors.label),
+                style: _T.text(
+                  context,
+                  15,
+                  FontWeight.w700,
+                  AppColors.label,
+                ),
               ),
             ],
           ),
@@ -285,12 +333,16 @@ class _ChatButton extends StatelessWidget {
 class _RecentOrderCard extends StatelessWidget {
   final OrderModel order;
 
-  const _RecentOrderCard({required this.order});
+  const _RecentOrderCard({
+    required this.order,
+  });
 
   String _shortOrderId(String id) {
     final clean = id.trim();
+
     if (clean.isEmpty) return 'ORDER';
     if (clean.length <= 8) return clean.toUpperCase();
+
     return clean.substring(0, 8).toUpperCase();
   }
 
@@ -322,11 +374,13 @@ class _RecentOrderCard extends StatelessWidget {
 
     try {
       final dateTime = DateTime.parse(isoString).toLocal();
+
       final hour = dateTime.hour == 0
           ? 12
           : dateTime.hour > 12
-          ? dateTime.hour - 12
-          : dateTime.hour;
+              ? dateTime.hour - 12
+              : dateTime.hour;
+
       final minute = dateTime.minute.toString().padLeft(2, '0');
       final period = dateTime.hour >= 12 ? 'pm' : 'am';
 
@@ -337,7 +391,11 @@ class _RecentOrderCard extends StatelessWidget {
   }
 
   Future<void> _copyOrderId(BuildContext context) async {
-    await Clipboard.setData(ClipboardData(text: order.orderId));
+    await Clipboard.setData(
+      ClipboardData(
+        text: order.orderId,
+      ),
+    );
 
     if (!context.mounted) return;
 
@@ -362,11 +420,17 @@ class _RecentOrderCard extends StatelessWidget {
         : 'Dropoff location';
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: r(18), vertical: r(16)),
+      padding: EdgeInsets.symmetric(
+        horizontal: r(18),
+        vertical: r(16),
+      ),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(r(16)),
-        border: Border.all(color: AppColors.inputBorder, width: 1),
+        border: Border.all(
+          color: AppColors.inputBorder,
+          width: 1,
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -374,7 +438,9 @@ class _RecentOrderCard extends StatelessWidget {
           Container(
             width: r(12),
             height: r(12),
-            margin: EdgeInsets.only(top: r(5)),
+            margin: EdgeInsets.only(
+              top: r(5),
+            ),
             decoration: const BoxDecoration(
               color: AppColors.brandBlueDark,
               shape: BoxShape.circle,
@@ -416,11 +482,16 @@ class _RecentOrderCard extends StatelessWidget {
             onTap: () => _copyOrderId(context),
             behavior: HitTestBehavior.opaque,
             child: Container(
-              padding: EdgeInsets.symmetric(horizontal: r(9), vertical: r(6)),
+              padding: EdgeInsets.symmetric(
+                horizontal: r(9),
+                vertical: r(6),
+              ),
               decoration: BoxDecoration(
                 color: AppColors.inputFill,
                 borderRadius: BorderRadius.circular(r(10)),
-                border: Border.all(color: AppColors.inputBorder),
+                border: Border.all(
+                  color: AppColors.inputBorder,
+                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -453,7 +524,9 @@ class _RecentOrderCard extends StatelessWidget {
 class _NoRecentOrderCard extends StatelessWidget {
   final VoidCallback onTap;
 
-  const _NoRecentOrderCard({required this.onTap});
+  const _NoRecentOrderCard({
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -468,10 +541,15 @@ class _NoRecentOrderCard extends StatelessWidget {
         onTap: onTap,
         child: Container(
           width: double.infinity,
-          padding: EdgeInsets.symmetric(horizontal: r(16), vertical: r(16)),
+          padding: EdgeInsets.symmetric(
+            horizontal: r(16),
+            vertical: r(16),
+          ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(r(16)),
-            border: Border.all(color: AppColors.inputBorder),
+            border: Border.all(
+              color: AppColors.inputBorder,
+            ),
           ),
           child: Row(
             children: [
@@ -518,7 +596,9 @@ class _NoRecentOrderCard extends StatelessWidget {
 class _OtherHelpCard extends StatelessWidget {
   final VoidCallback onTap;
 
-  const _OtherHelpCard({required this.onTap});
+  const _OtherHelpCard({
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -533,10 +613,15 @@ class _OtherHelpCard extends StatelessWidget {
         onTap: onTap,
         child: Container(
           width: double.infinity,
-          padding: EdgeInsets.symmetric(horizontal: r(16), vertical: r(16)),
+          padding: EdgeInsets.symmetric(
+            horizontal: r(16),
+            vertical: r(16),
+          ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(r(16)),
-            border: Border.all(color: AppColors.inputBorder),
+            border: Border.all(
+              color: AppColors.inputBorder,
+            ),
           ),
           child: Row(
             children: [
@@ -612,10 +697,6 @@ class _HeaderPatternPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
-    /*
-     * Large soft background shape.
-     * This adds depth without looking like a random icon.
-     */
     final backgroundShape = Path()
       ..moveTo(width * 0.48, -height * 0.10)
       ..cubicTo(
@@ -644,13 +725,16 @@ class _HeaderPatternPainter extends CustomPainter {
       )
       ..close();
 
-    canvas.drawPath(backgroundShape, softFill);
+    canvas.drawPath(
+      backgroundShape,
+      softFill,
+    );
 
-    /*
-     * Flowing conversation path.
-     */
     final conversationPath = Path()
-      ..moveTo(width * 0.38, height * 0.70)
+      ..moveTo(
+        width * 0.38,
+        height * 0.70,
+      )
       ..cubicTo(
         width * 0.50,
         height * 0.52,
@@ -668,15 +752,23 @@ class _HeaderPatternPainter extends CustomPainter {
         height * 0.33,
       );
 
-    canvas.drawPath(conversationPath, softStroke);
-    _drawDashedPath(canvas, conversationPath, line);
+    canvas.drawPath(
+      conversationPath,
+      softStroke,
+    );
 
-    /*
-     * Main double speech-bubble artwork.
-     */
+    _drawDashedPath(
+      canvas,
+      conversationPath,
+      line,
+    );
+
     _drawLargeChatBubble(
       canvas,
-      center: Offset(width * 0.77, height * 0.30),
+      center: Offset(
+        width * 0.77,
+        height * 0.30,
+      ),
       bubbleWidth: width * 0.25,
       bubbleHeight: height * 0.25,
       paint: line,
@@ -684,31 +776,63 @@ class _HeaderPatternPainter extends CustomPainter {
 
     _drawSmallChatBubble(
       canvas,
-      center: Offset(width * 0.88, height * 0.53),
+      center: Offset(
+        width * 0.88,
+        height * 0.53,
+      ),
       bubbleWidth: width * 0.16,
       bubbleHeight: height * 0.17,
       paint: faintLine,
     );
 
-    /*
-     * Small conversation dots.
-     */
-    final dotPaint = Paint()..color = Colors.white.withOpacity(0.22);
+    final dotPaint = Paint()
+      ..color = Colors.white.withOpacity(0.22);
 
-    canvas.drawCircle(Offset(width * 0.72, height * 0.29), 3.2, dotPaint);
+    canvas.drawCircle(
+      Offset(width * 0.72, height * 0.29),
+      3.2,
+      dotPaint,
+    );
 
-    canvas.drawCircle(Offset(width * 0.77, height * 0.29), 3.2, dotPaint);
+    canvas.drawCircle(
+      Offset(width * 0.77, height * 0.29),
+      3.2,
+      dotPaint,
+    );
 
-    canvas.drawCircle(Offset(width * 0.82, height * 0.29), 3.2, dotPaint);
+    canvas.drawCircle(
+      Offset(width * 0.82, height * 0.29),
+      3.2,
+      dotPaint,
+    );
 
-    /*
-     * Subtle decorative nodes.
-     */
-    _drawNode(canvas, Offset(width * 0.57, height * 0.56), 4);
+    _drawNode(
+      canvas,
+      Offset(
+        width * 0.57,
+        height * 0.56,
+      ),
+      4,
+    );
 
-    _drawNode(canvas, Offset(width * 0.94, height * 0.39), 5);
+    _drawNode(
+      canvas,
+      Offset(
+        width * 0.94,
+        height * 0.39,
+      ),
+      5,
+    );
 
-    _drawPlus(canvas, Offset(width * 0.61, height * 0.20), 6, faintLine);
+    _drawPlus(
+      canvas,
+      Offset(
+        width * 0.61,
+        height * 0.20,
+      ),
+      6,
+      faintLine,
+    );
   }
 
   void _drawLargeChatBubble(
@@ -722,35 +846,67 @@ class _HeaderPatternPainter extends CustomPainter {
     final top = center.dy - bubbleHeight / 2;
 
     final bubble = Path()
-      ..moveTo(left + bubbleWidth * 0.18, top)
-      ..lineTo(left + bubbleWidth * 0.82, top)
+      ..moveTo(
+        left + bubbleWidth * 0.18,
+        top,
+      )
+      ..lineTo(
+        left + bubbleWidth * 0.82,
+        top,
+      )
       ..quadraticBezierTo(
         left + bubbleWidth,
         top,
         left + bubbleWidth,
         top + bubbleHeight * 0.20,
       )
-      ..lineTo(left + bubbleWidth, top + bubbleHeight * 0.68)
+      ..lineTo(
+        left + bubbleWidth,
+        top + bubbleHeight * 0.68,
+      )
       ..quadraticBezierTo(
         left + bubbleWidth,
         top + bubbleHeight * 0.88,
         left + bubbleWidth * 0.79,
         top + bubbleHeight * 0.88,
       )
-      ..lineTo(left + bubbleWidth * 0.62, top + bubbleHeight * 0.88)
-      ..lineTo(left + bubbleWidth * 0.52, top + bubbleHeight)
-      ..lineTo(left + bubbleWidth * 0.48, top + bubbleHeight * 0.88)
-      ..lineTo(left + bubbleWidth * 0.18, top + bubbleHeight * 0.88)
+      ..lineTo(
+        left + bubbleWidth * 0.62,
+        top + bubbleHeight * 0.88,
+      )
+      ..lineTo(
+        left + bubbleWidth * 0.52,
+        top + bubbleHeight,
+      )
+      ..lineTo(
+        left + bubbleWidth * 0.48,
+        top + bubbleHeight * 0.88,
+      )
+      ..lineTo(
+        left + bubbleWidth * 0.18,
+        top + bubbleHeight * 0.88,
+      )
       ..quadraticBezierTo(
         left,
         top + bubbleHeight * 0.88,
         left,
         top + bubbleHeight * 0.68,
       )
-      ..lineTo(left, top + bubbleHeight * 0.20)
-      ..quadraticBezierTo(left, top, left + bubbleWidth * 0.18, top);
+      ..lineTo(
+        left,
+        top + bubbleHeight * 0.20,
+      )
+      ..quadraticBezierTo(
+        left,
+        top,
+        left + bubbleWidth * 0.18,
+        top,
+      );
 
-    canvas.drawPath(bubble, paint);
+    canvas.drawPath(
+      bubble,
+      paint,
+    );
   }
 
   void _drawSmallChatBubble(
@@ -761,59 +917,126 @@ class _HeaderPatternPainter extends CustomPainter {
     required Paint paint,
   }) {
     final rect = RRect.fromRectAndRadius(
-      Rect.fromCenter(center: center, width: bubbleWidth, height: bubbleHeight),
+      Rect.fromCenter(
+        center: center,
+        width: bubbleWidth,
+        height: bubbleHeight,
+      ),
       const Radius.circular(12),
     );
 
-    canvas.drawRRect(rect, paint);
+    canvas.drawRRect(
+      rect,
+      paint,
+    );
 
     final tail = Path()
-      ..moveTo(center.dx + bubbleWidth * 0.17, center.dy + bubbleHeight * 0.48)
-      ..lineTo(center.dx + bubbleWidth * 0.31, center.dy + bubbleHeight * 0.67)
-      ..lineTo(center.dx + bubbleWidth * 0.34, center.dy + bubbleHeight * 0.44);
+      ..moveTo(
+        center.dx + bubbleWidth * 0.17,
+        center.dy + bubbleHeight * 0.48,
+      )
+      ..lineTo(
+        center.dx + bubbleWidth * 0.31,
+        center.dy + bubbleHeight * 0.67,
+      )
+      ..lineTo(
+        center.dx + bubbleWidth * 0.34,
+        center.dy + bubbleHeight * 0.44,
+      );
 
-    canvas.drawPath(tail, paint);
+    canvas.drawPath(
+      tail,
+      paint,
+    );
   }
 
-  void _drawDashedPath(Canvas canvas, Path path, Paint paint) {
+  void _drawDashedPath(
+    Canvas canvas,
+    Path path,
+    Paint paint,
+  ) {
     for (final metric in path.computeMetrics()) {
       double distance = 0;
 
       while (distance < metric.length) {
-        final end = (distance + 10).clamp(0.0, metric.length);
+        final end = (distance + 10).clamp(
+          0.0,
+          metric.length,
+        );
 
-        canvas.drawPath(metric.extractPath(distance, end), paint);
+        canvas.drawPath(
+          metric.extractPath(
+            distance,
+            end,
+          ),
+          paint,
+        );
 
         distance += 21;
       }
     }
   }
 
-  void _drawNode(Canvas canvas, Offset center, double radius) {
-    final outerPaint = Paint()..color = Colors.white.withOpacity(0.07);
+  void _drawNode(
+    Canvas canvas,
+    Offset center,
+    double radius,
+  ) {
+    final outerPaint = Paint()
+      ..color = Colors.white.withOpacity(0.07);
 
-    final innerPaint = Paint()..color = Colors.white.withOpacity(0.24);
+    final innerPaint = Paint()
+      ..color = Colors.white.withOpacity(0.24);
 
-    canvas.drawCircle(center, radius + 7, outerPaint);
-    canvas.drawCircle(center, radius, innerPaint);
+    canvas.drawCircle(
+      center,
+      radius + 7,
+      outerPaint,
+    );
+
+    canvas.drawCircle(
+      center,
+      radius,
+      innerPaint,
+    );
   }
 
-  void _drawPlus(Canvas canvas, Offset center, double size, Paint paint) {
+  void _drawPlus(
+    Canvas canvas,
+    Offset center,
+    double size,
+    Paint paint,
+  ) {
     canvas.drawLine(
-      Offset(center.dx - size, center.dy),
-      Offset(center.dx + size, center.dy),
+      Offset(
+        center.dx - size,
+        center.dy,
+      ),
+      Offset(
+        center.dx + size,
+        center.dy,
+      ),
       paint,
     );
 
     canvas.drawLine(
-      Offset(center.dx, center.dy - size),
-      Offset(center.dx, center.dy + size),
+      Offset(
+        center.dx,
+        center.dy - size,
+      ),
+      Offset(
+        center.dx,
+        center.dy + size,
+      ),
       paint,
     );
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(
+    covariant CustomPainter oldDelegate,
+  ) =>
+      false;
 }
 
 class _T {

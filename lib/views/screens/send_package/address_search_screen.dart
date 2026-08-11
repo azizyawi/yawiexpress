@@ -9,6 +9,8 @@ import 'package:wanmac/core/theme/app_colors.dart';
 import 'package:wanmac/core/utils/app_snackbar.dart';
 import 'package:wanmac/models/location_model.dart';
 import 'package:wanmac/models/location_suggestion_model.dart';
+import 'package:wanmac/views/screens/send_package/location_map_pick_screen.dart';
+
 
 double _scale(BuildContext context) {
   final size = MediaQuery.sizeOf(context);
@@ -58,6 +60,9 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
 
   final TextEditingController _searchController = TextEditingController();
   Timer? _debounce;
+  Timer? _loadingDelay;
+
+  bool _showSlowLoading = false;
 
   List<_SavedDeliveryLocation> _savedLocations = [];
 
@@ -72,6 +77,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
   @override
   void dispose() {
     _debounce?.cancel();
+    _loadingDelay?.cancel();
     _searchController.dispose();
     controller.clearSuggestions(notify: false);
     super.dispose();
@@ -116,8 +122,15 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
 
   void _onChanged(String value) {
     _debounce?.cancel();
+    _loadingDelay?.cancel();
 
     final query = value.trim();
+
+    if (_showSlowLoading) {
+      setState(() {
+        _showSlowLoading = false;
+      });
+    }
 
     if (query.length < 2) {
       controller.clearSuggestions();
@@ -125,9 +138,31 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
       return;
     }
 
-    _debounce = Timer(const Duration(milliseconds: 700), () {
-      controller.searchAddresses(query);
-    });
+    _debounce = Timer(
+      const Duration(milliseconds: 350),
+      () {
+        controller.searchAddresses(query);
+
+        // Do not show a spinner immediately.
+        // Only reveal a subtle loading state if the request
+        // is still running after 650ms and there are no
+        // previous suggestions to keep on screen.
+        _loadingDelay?.cancel();
+        _loadingDelay = Timer(
+          const Duration(milliseconds: 650),
+          () {
+            if (!mounted) return;
+
+            if (controller.isSearchingAddresses &&
+                controller.suggestions.isEmpty) {
+              setState(() {
+                _showSlowLoading = true;
+              });
+            }
+          },
+        );
+      },
+    );
 
     setState(() {});
   }
@@ -154,6 +189,21 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
     } else if (controller.locationError != null) {
       _showSnack(controller.locationError!, type: AppSnackBarType.error);
     }
+  }
+
+  Future<void> _chooseLocationOnMap() async {
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    final result = await Navigator.push<LocationModel>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const LocationMapPickerScreen(),
+      ),
+    );
+
+    if (!mounted || result == null) return;
+
+    Navigator.pop(context, result);
   }
 
   void _onRecentTap(LocationModel location) {
@@ -322,6 +372,10 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                         controller: _searchController,
                         onChanged: _onChanged,
                         isSearching: controller.isSearchingAddresses,
+                        onClear: () {
+                          _searchController.clear();
+                          _onChanged('');
+                        },
                       ),
                       SizedBox(height: r(12)),
                       Expanded(
@@ -440,6 +494,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
     final query = _searchController.text.trim();
     final hasSuggestions = controller.suggestions.isNotEmpty;
     final isSearching = controller.isSearchingAddresses;
+    final hasNetworkError = controller.hasAddressNetworkError;
 
     if (query.length < 2) {
       return const _EmptySearchState(
@@ -449,53 +504,84 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
       );
     }
 
-    if (!hasSuggestions && isSearching) {
-      return const SizedBox.shrink();
-    }
+    // Keep previous successful suggestions visible if a later request
+    // temporarily fails. This avoids making the screen look empty.
+    if (hasSuggestions) {
+      return Column(
+        children: [
+          if (hasNetworkError) ...[
+            _ConnectionNotice(
+              onRetry: () {
+                controller.searchAddresses(query);
+              },
+            ),
+            SizedBox(height: r(8)),
+          ],
+          Expanded(
+            child: ListView.separated(
+              padding: EdgeInsets.zero,
+              itemCount: controller.suggestions.length,
+              separatorBuilder: (_, __) => const _SectionDivider(),
+              itemBuilder: (context, index) {
+                final suggestion = controller.suggestions[index];
 
-    if (!hasSuggestions) {
-      return const _EmptySearchState(
-        icon: Icons.location_off_outlined,
-        title: 'No matching locations found',
-        subtitle: 'Try a landmark, street name, or business name',
+                return _AddressRow(
+                  title: [
+                    suggestion.title,
+                    suggestion.subtitle,
+                  ].where((e) => e.trim().isNotEmpty).join(', '),
+                  subtitle: _extractArea(suggestion.subtitle),
+                  onTap: () => _onSuggestionTap(suggestion),
+                  trailing: GestureDetector(
+                    onTap: () => _saveSuggestion(suggestion),
+                    child: Container(
+                      width: r(38),
+                      height: r(38),
+                      decoration: BoxDecoration(
+                        color: AppColors.brandBlueDark.withOpacity(0.07),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppColors.brandBlueDark.withOpacity(0.12),
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.bookmark_add_outlined,
+                        size: r(19),
+                        color: AppColors.brandBlueDark,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       );
     }
 
-    return ListView.separated(
-      padding: EdgeInsets.zero,
-      itemCount: controller.suggestions.length,
-      separatorBuilder: (_, __) => const _SectionDivider(),
-      itemBuilder: (context, index) {
-        final suggestion = controller.suggestions[index];
+    if (isSearching) {
+      if (!_showSlowLoading) {
+        // Keep the screen visually calm for quick requests.
+        return const SizedBox.shrink();
+      }
 
-        return _AddressRow(
-          title: [
-            suggestion.title,
-            suggestion.subtitle,
-          ].where((e) => e.trim().isNotEmpty).join(', '),
-          subtitle: _extractArea(suggestion.subtitle),
-          onTap: () => _onSuggestionTap(suggestion),
-          trailing: GestureDetector(
-            onTap: () => _saveSuggestion(suggestion),
-            child: Container(
-              width: r(38),
-              height: r(38),
-              decoration: BoxDecoration(
-                color: AppColors.brandBlueDark.withOpacity(0.07),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: AppColors.brandBlueDark.withOpacity(0.12),
-                ),
-              ),
-              child: Icon(
-                Icons.bookmark_add_outlined,
-                size: r(19),
-                color: AppColors.brandBlueDark,
-              ),
-            ),
-          ),
-        );
-      },
+      return const _QuietLoadingState();
+    }
+
+    if (hasNetworkError) {
+      return _NetworkErrorState(
+        onRetry: () {
+          final currentQuery = _searchController.text.trim();
+
+          if (currentQuery.length >= 2) {
+            controller.searchAddresses(currentQuery);
+          }
+        },
+      );
+    }
+
+    return _NoResultsState(
+      onChooseMap: _chooseLocationOnMap,
     );
   }
 
@@ -876,11 +962,13 @@ class _SearchField extends StatelessWidget {
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
   final bool isSearching;
+  final VoidCallback onClear;
 
   const _SearchField({
     required this.controller,
     required this.onChanged,
     required this.isSearching,
+    required this.onClear,
   });
 
   @override
@@ -929,14 +1017,18 @@ class _SearchField extends StatelessWidget {
           ),
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 180),
-            child: isSearching
-                ? SizedBox(
-                    key: const ValueKey('loader'),
-                    width: r(16),
-                    height: r(16),
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: AppColors.brandBlue,
+            child: controller.text.isNotEmpty
+                ? GestureDetector(
+                    key: const ValueKey('clear'),
+                    onTap: onClear,
+                    behavior: HitTestBehavior.opaque,
+                    child: Padding(
+                      padding: EdgeInsets.all(r(3)),
+                      child: Icon(
+                        Icons.close_rounded,
+                        size: r(19),
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   )
                 : SizedBox(
@@ -1023,6 +1115,271 @@ class _EmptySearchState extends StatelessWidget {
                 height: 1.45,
                 color: AppColors.textSecondary,
                 fontWeight: FontWeight.w400,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+class _QuietLoadingState extends StatelessWidget {
+  const _QuietLoadingState();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = _scale(context);
+    double r(double value) => value * s;
+
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: r(24)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: r(24),
+              height: r(24),
+              child: CircularProgressIndicator(
+                strokeWidth: 2.2,
+                color: AppColors.brandBlue,
+              ),
+            ),
+            SizedBox(height: r(12)),
+            Text(
+              'Finding locations...',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.montserrat(
+                fontSize: r(13),
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ConnectionNotice extends StatelessWidget {
+  final VoidCallback onRetry;
+
+  const _ConnectionNotice({
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final s = _scale(context);
+    double r(double value) => value * s;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(
+        horizontal: r(12),
+        vertical: r(10),
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.inputFill,
+        borderRadius: BorderRadius.circular(r(12)),
+        border: Border.all(
+          color: AppColors.inputBorder,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.wifi_off_rounded,
+            size: r(18),
+            color: AppColors.textSecondary,
+          ),
+          SizedBox(width: r(8)),
+          Expanded(
+            child: Text(
+              'Having trouble refreshing. Showing previous results.',
+              style: GoogleFonts.montserrat(
+                fontSize: r(11.5),
+                height: 1.35,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          SizedBox(width: r(8)),
+          TextButton(
+            onPressed: onRetry,
+            child: Text(
+              'Retry',
+              style: GoogleFonts.montserrat(
+                fontSize: r(11.5),
+                fontWeight: FontWeight.w700,
+                color: AppColors.brandBlue,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NoResultsState extends StatelessWidget {
+  final VoidCallback onChooseMap;
+
+  const _NoResultsState({
+    required this.onChooseMap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final s = _scale(context);
+    double r(double value) => value * s;
+
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: r(24)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: r(58),
+              height: r(58),
+              decoration: BoxDecoration(
+                color: AppColors.inputFill,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.location_off_outlined,
+                color: AppColors.brandBlue,
+                size: r(26),
+              ),
+            ),
+            SizedBox(height: r(14)),
+            Text(
+              'No matching locations found',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.montserrat(
+                fontSize: r(15),
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            SizedBox(height: r(6)),
+            Text(
+              'Try a landmark, street name, or business name.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.montserrat(
+                fontSize: r(13),
+                height: 1.45,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+            SizedBox(height: r(16)),
+            OutlinedButton.icon(
+              onPressed: onChooseMap,
+              icon: Icon(
+                Icons.map_outlined,
+                size: r(18),
+              ),
+              label: Text(
+                'Choose location on map',
+                style: GoogleFonts.montserrat(
+                  fontSize: r(13),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.brandBlue,
+                side: BorderSide(
+                  color: AppColors.brandBlue.withOpacity(0.35),
+                ),
+                padding: EdgeInsets.symmetric(
+                  horizontal: r(18),
+                  vertical: r(12),
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(r(14)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NetworkErrorState extends StatelessWidget {
+  final VoidCallback onRetry;
+
+  const _NetworkErrorState({
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final s = _scale(context);
+    double r(double value) => value * s;
+
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: r(24)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: r(58),
+              height: r(58),
+              decoration: BoxDecoration(
+                color: AppColors.inputFill,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.wifi_off_rounded,
+                color: AppColors.brandBlue,
+                size: r(26),
+              ),
+            ),
+            SizedBox(height: r(14)),
+            Text(
+              'Having trouble loading locations',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.montserrat(
+                fontSize: r(15),
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            SizedBox(height: r(6)),
+            Text(
+              'Please try again. Your internet may still be working, but location search is slow.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.montserrat(
+                fontSize: r(13),
+                height: 1.45,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+            SizedBox(height: r(16)),
+            TextButton.icon(
+              onPressed: onRetry,
+              icon: Icon(
+                Icons.refresh_rounded,
+                size: r(19),
+                color: AppColors.brandBlue,
+              ),
+              label: Text(
+                'Try again',
+                style: GoogleFonts.montserrat(
+                  fontSize: r(13),
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.brandBlue,
+                ),
               ),
             ),
           ],
