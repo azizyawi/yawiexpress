@@ -7,6 +7,7 @@ import 'package:wanmac/views/screens/home/all_activities_screen.dart';
 import 'package:wanmac/views/screens/home/widgets/home_activity_card.dart';
 import 'package:wanmac/views/screens/home/widgets/home_section_header.dart';
 import 'package:wanmac/views/screens/home/widgets/home_text_style.dart';
+import 'package:wanmac/views/screens/send_package/send_package_intro_screen.dart';
 import 'package:wanmac/views/screens/send_package/send_package_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -119,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void _goToSendPackage(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const SendPackageScreen()),
+      MaterialPageRoute(builder: (_) => const SendPackageIntroScreen()),
     );
   }
 

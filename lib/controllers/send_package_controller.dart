@@ -10,6 +10,13 @@ import 'package:wanmac/services/order_api_service.dart';
 import 'package:wanmac/services/order_estimate_api_service.dart';
 
 class SendPackageController extends ChangeNotifier {
+  bool _disposed = false;
+
+  @override
+  void notifyListeners() {
+    if (!_disposed) super.notifyListeners();
+  }
+
   String _formatLocationAddress(LocationModel location) {
     final name = location.name?.trim() ?? '';
 
@@ -686,9 +693,7 @@ class SendPackageController extends ChangeNotifier {
       throw Exception('Sender phone is required');
     }
 
-    if (senderEmail.trim().isEmpty) {
-      throw Exception('Sender email is required');
-    }
+    // Email is optional: the other contact only provides name and phone.
 
     if ((selectedPackageType ?? '').trim().isEmpty) {
       throw Exception('Package type is required');
@@ -956,6 +961,8 @@ class SendPackageController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
+    _addressSearchRequestId++;
     _stopPickupPolling();
     _stopDropoffPolling();
     super.dispose();
