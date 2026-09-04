@@ -14,8 +14,8 @@ const _systemBarStyle = SystemUiOverlayStyle(
   statusBarColor: Colors.transparent,
   statusBarBrightness: Brightness.light,
   statusBarIconBrightness: Brightness.dark,
-  systemNavigationBarColor: Colors.white,
-  systemNavigationBarDividerColor: Colors.white,
+  systemNavigationBarColor: Colors.transparent,
+  systemNavigationBarDividerColor: Colors.transparent,
   systemNavigationBarIconBrightness: Brightness.dark,
   systemNavigationBarContrastEnforced: false,
 );
@@ -74,24 +74,6 @@ class MyApp extends StatelessWidget {
           seedColor: const Color(0xFF1E2FA8),
         ),
       ),
-
-      // Paint white behind Android's system navigation buttons.
-      // Keep screens above this area, even in edge-to-edge mode.
-      builder: (context, child) {
-        return AnnotatedRegion<SystemUiOverlayStyle>(
-          value: _systemBarStyle,
-          child: ColoredBox(
-            color: Colors.white,
-            child: SafeArea(
-              top: false,
-              left: false,
-              right: false,
-              child: child ?? const SizedBox.shrink(),
-            ),
-          ),
-        );
-      },
-
       home: isLoggedIn
           ? const AppEntrySplashScreen()
           : const SplashScreen(),
