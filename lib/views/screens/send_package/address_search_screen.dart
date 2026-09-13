@@ -167,51 +167,85 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
     setState(() {});
   }
 
+  Future<LocationModel?> _confirmLocationOnMap({
+    LocationModel? initialLocation,
+  }) async {
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    return Navigator.push<LocationModel>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => LocationMapPickerScreen(
+          initialLocation: initialLocation,
+          isPickup: widget.isPickup,
+        ),
+      ),
+    );
+  }
+
   Future<void> _useCurrentLocation() async {
     final location = await controller.fetchCurrentLocationOnly();
 
     if (!mounted) return;
 
-    if (location != null) {
-      Navigator.pop(context, location);
-    } else if (controller.locationError != null) {
-      _showSnack(controller.locationError!, type: AppSnackBarType.error);
+    if (location == null) {
+      if (controller.locationError != null) {
+        _showSnack(controller.locationError!, type: AppSnackBarType.error);
+      }
+      return;
     }
+
+    final confirmed = await _confirmLocationOnMap(
+      initialLocation: location,
+    );
+
+    if (!mounted || confirmed == null) return;
+    Navigator.pop(context, confirmed);
   }
 
   Future<void> _onSuggestionTap(LocationSuggestionModel suggestion) async {
-    final result = await controller.selectSuggestion(suggestion);
+    final location = await controller.selectSuggestion(suggestion);
 
     if (!mounted) return;
 
-    if (result != null) {
-      Navigator.pop(context, result);
-    } else if (controller.locationError != null) {
-      _showSnack(controller.locationError!, type: AppSnackBarType.error);
+    if (location == null) {
+      if (controller.locationError != null) {
+        _showSnack(controller.locationError!, type: AppSnackBarType.error);
+      }
+      return;
     }
+
+    final confirmed = await _confirmLocationOnMap(
+      initialLocation: location,
+    );
+
+    if (!mounted || confirmed == null) return;
+    Navigator.pop(context, confirmed);
   }
 
   Future<void> _chooseLocationOnMap() async {
-    FocusManager.instance.primaryFocus?.unfocus();
+    final confirmed = await _confirmLocationOnMap();
 
-    final result = await Navigator.push<LocationModel>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const LocationMapPickerScreen(),
-      ),
+    if (!mounted || confirmed == null) return;
+    Navigator.pop(context, confirmed);
+  }
+
+  Future<void> _onRecentTap(LocationModel location) async {
+    final confirmed = await _confirmLocationOnMap(
+      initialLocation: location,
     );
 
-    if (!mounted || result == null) return;
-
-    Navigator.pop(context, result);
+    if (!mounted || confirmed == null) return;
+    Navigator.pop(context, confirmed);
   }
 
-  void _onRecentTap(LocationModel location) {
-    Navigator.pop(context, location);
-  }
+  Future<void> _onSavedTap(_SavedDeliveryLocation item) async {
+    final confirmed = await _confirmLocationOnMap(
+      initialLocation: item.location,
+    );
 
-  void _onSavedTap(_SavedDeliveryLocation item) {
-    Navigator.pop(context, item.location);
+    if (!mounted || confirmed == null) return;
+    Navigator.pop(context, confirmed);
   }
 
   Future<void> _saveSuggestion(LocationSuggestionModel suggestion) async {

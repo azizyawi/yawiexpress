@@ -396,6 +396,235 @@ class LocationService {
   // REVERSE GEOCODING - WANPADI BACKEND
   // -------------------------------------------------------
 
+  bool _containsPlusCode(String value) {
+    final clean = value.trim().toUpperCase();
+
+    return RegExp(
+      r'(^|[\s,])([23456789CFGHJMPQRVWX]{4,8}\+[23456789CFGHJMPQRVWX]{2,3})(?=$|[\s,])',
+    ).hasMatch(clean);
+  }
+
+  Map<String, String> _googleAddressComponents(
+    Map<String, dynamic> result,
+  ) {
+    final output = <String, String>{};
+    final raw = result['address_components'];
+
+    if (raw is! List) return output;
+
+    for (final item in raw) {
+      if (item is! Map) continue;
+
+      final component = Map<String, dynamic>.from(item);
+      final name = component['long_name']?.toString().trim() ?? '';
+      final types = (component['types'] as List?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const <String>[];
+
+      if (name.isEmpty) continue;
+
+      for (final type in types) {
+        output.putIfAbsent(type, () => name);
+      }
+    }
+
+    return output;
+  }
+
+  Future<LocationModel?> _reverseGeocodeExactPin({
+    required double latitude,
+    required double longitude,
+  }) async {
+    final apiKey = GooglePlacesConfig.apiKey.trim();
+    if (apiKey.isEmpty) return null;
+
+    final uri = Uri.https(
+      'maps.googleapis.com',
+      '/maps/api/geocode/json',
+      {
+        'latlng': '$latitude,$longitude',
+        'key': apiKey,
+        'language': 'en',
+        'region': 'ng',
+      },
+    );
+
+    final response = await _getWithRetry(
+      uri,
+      retries: 1,
+    );
+
+    if (response.statusCode != 200) {
+      return null;
+    }
+
+    final decoded = jsonDecode(response.body);
+
+    if (decoded is! Map ||
+        decoded['status']?.toString() != 'OK') {
+      return null;
+    }
+
+    final rawResults = decoded['results'];
+
+    if (rawResults is! List || rawResults.isEmpty) {
+      return null;
+    }
+
+    Map<String, dynamic>? selected;
+    Map<String, String>? selectedComponents;
+
+    // Chowdeck-style behavior:
+    // Prefer a STREET/ROAD label for a dragged map pin.
+    // We intentionally do NOT choose businesses/POIs here.
+    //
+    // Priority:
+    //   1. route
+    //   2. intersection
+    //   3. street_address
+    //   4. sublocality / neighborhood
+    //   5. locality
+    //
+    // We intentionally ignore business/POI names here because a delivery pin
+    // should describe the road under/nearest the pin, not whichever shop Google
+    // happens to rank nearby.
+    const preferredTypes = <String>[
+      'route',
+      'intersection',
+      'street_address',
+      'sublocality_level_1',
+      'sublocality',
+      'neighborhood',
+      'locality',
+    ];
+
+    for (final preferredType in preferredTypes) {
+      for (final raw in rawResults) {
+        if (raw is! Map) continue;
+
+        final result = Map<String, dynamic>.from(raw);
+
+        final types = (result['types'] as List?)
+                ?.map((value) => value.toString())
+                .toList() ??
+            const <String>[];
+
+        if (types.contains('plus_code')) continue;
+        if (!types.contains(preferredType)) continue;
+
+        final components =
+            _googleAddressComponents(result);
+
+        final route = components['route']?.trim() ?? '';
+        final locality =
+            components['locality']?.trim() ??
+                components['administrative_area_level_2']?.trim() ??
+                '';
+
+        final sublocality =
+            components['sublocality_level_1']?.trim() ??
+                components['sublocality']?.trim() ??
+                components['neighborhood']?.trim() ??
+                '';
+
+        final formatted =
+            result['formatted_address']?.toString().trim() ?? '';
+
+        final hasReadableValue =
+            route.isNotEmpty ||
+            sublocality.isNotEmpty ||
+            locality.isNotEmpty ||
+            (formatted.isNotEmpty &&
+                !_containsPlusCode(formatted));
+
+        if (!hasReadableValue) continue;
+
+        selected = result;
+        selectedComponents = components;
+        break;
+      }
+
+      if (selected != null) break;
+    }
+
+    if (selected == null || selectedComponents == null) {
+      return null;
+    }
+
+    final components = selectedComponents;
+
+    final route = components['route']?.trim() ?? '';
+    final sublocality =
+        components['sublocality_level_1']?.trim() ??
+            components['sublocality']?.trim() ??
+            components['neighborhood']?.trim() ??
+            '';
+
+    final city =
+        components['locality']?.trim() ??
+            components['administrative_area_level_2']?.trim() ??
+            'Benin City';
+
+    final state =
+        components['administrative_area_level_1']?.trim() ??
+            'Edo';
+
+    final country =
+        components['country']?.trim() ??
+            'Nigeria';
+
+    String primary;
+
+    if (route.isNotEmpty &&
+        !_containsPlusCode(route)) {
+      primary = route;
+    } else if (sublocality.isNotEmpty &&
+        !_containsPlusCode(sublocality)) {
+      primary = sublocality;
+    } else {
+      final formatted =
+          selected['formatted_address']
+                  ?.toString()
+                  .trim() ??
+              '';
+
+      if (formatted.isEmpty ||
+          _containsPlusCode(formatted)) {
+        return null;
+      }
+
+      primary = formatted.split(',').first.trim();
+    }
+
+    if (primary.isEmpty ||
+        _containsPlusCode(primary)) {
+      return null;
+    }
+
+    final addressParts = <String>[
+      primary,
+      if (city.isNotEmpty &&
+          city.toLowerCase() != primary.toLowerCase())
+        city,
+      if (state.isNotEmpty &&
+          state.toLowerCase() != city.toLowerCase())
+        state,
+      if (country.isNotEmpty) country,
+    ];
+
+    return LocationModel(
+      // The coordinates are always the exact centre pin coordinates.
+      latitude: latitude,
+      longitude: longitude,
+      address: addressParts.join(', '),
+      shortAddress: primary,
+      city: city,
+      state: state,
+      country: country,
+    );
+  }
+
   Future<LocationModel> reverseGeocode({
     required double latitude,
     required double longitude,
@@ -412,6 +641,21 @@ class LocationService {
         message:
             'Wanpadi currently serves locations within Benin City.',
       );
+    }
+
+    if (preferExactAddress) {
+      try {
+        final exact = await _reverseGeocodeExactPin(
+          latitude: latitude,
+          longitude: longitude,
+        );
+
+        if (exact != null) {
+          return exact;
+        }
+      } catch (_) {
+        // Fall through to the Wanpadi backend.
+      }
     }
 
     final uri = Uri.https(
@@ -464,7 +708,14 @@ class LocationService {
                   .trim() ??
               '';
 
-      if (address.isEmpty) {
+      final rawShortAddress =
+          location['shortAddress']
+                  ?.toString()
+                  .trim() ??
+              '';
+
+      if (address.isEmpty ||
+          _containsPlusCode(address)) {
         return _pinnedLocationFallback(
           latitude,
           longitude,
@@ -472,15 +723,17 @@ class LocationService {
         );
       }
 
+      final shortAddress =
+          rawShortAddress.isNotEmpty &&
+                  !_containsPlusCode(rawShortAddress)
+              ? rawShortAddress
+              : address.split(',').first.trim();
+
       return LocationModel(
         latitude: latitude,
         longitude: longitude,
         address: address,
-        shortAddress:
-            location['shortAddress']
-                    ?.toString()
-                    .trim() ??
-                address.split(',').first.trim(),
+        shortAddress: shortAddress,
         city:
             location['city']?.toString() ??
                 'Benin City',
@@ -737,7 +990,7 @@ class LocationService {
                 .trim() ??
             '';
 
-    final shortAddress =
+    final rawShortAddress =
         location['shortAddress']
                 ?.toString()
                 .trim() ??
@@ -745,6 +998,22 @@ class LocationService {
                 ?.toString()
                 .trim() ??
             '';
+
+    if (address.isNotEmpty &&
+        _containsPlusCode(address)) {
+      throw const LocationServiceException(
+        type: LocationServiceErrorType.placeNotFound,
+        message: 'Location could not be found.',
+      );
+    }
+
+    final shortAddress =
+        rawShortAddress.isNotEmpty &&
+                !_containsPlusCode(rawShortAddress)
+            ? rawShortAddress
+            : (address.isNotEmpty
+                ? address.split(',').first.trim()
+                : '');
 
     return LocationModel(
       latitude: latitude,

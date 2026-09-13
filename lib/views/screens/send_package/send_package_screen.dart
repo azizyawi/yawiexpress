@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -26,16 +27,10 @@ class _SendPackageScreenState extends ConsumerState<SendPackageScreen> {
   late final SendPackageController controller;
   final _name = TextEditingController();
   final _phone = TextEditingController();
-  final _accountSenderName = TextEditingController();
-  final _accountSenderPhone = TextEditingController();
-  final _accountReceiverName = TextEditingController();
-  final _accountReceiverPhone = TextEditingController();
   final _form = GlobalKey<FormState>();
   bool _sending = true;
   bool _loadingProfile = true;
   bool _reviewing = false;
-  bool _editingSenderDetails = false;
-  bool _editingReceiverDetails = false;
   int _step = 0;
   String _accountName = '', _accountPhone = '', _accountEmail = '';
   String? _profileError;
@@ -77,10 +72,6 @@ class _SendPackageScreenState extends ConsumerState<SendPackageScreen> {
       _accountName = '${prefs.getString('firstName') ?? ''} ${prefs.getString('lastName') ?? ''}'.trim();
       _accountPhone = prefs.getString('phoneNumber') ?? '';
       _accountEmail = prefs.getString('email') ?? '';
-      _accountSenderName.text = _accountName;
-      _accountSenderPhone.text = _accountPhone;
-      _accountReceiverName.text = _accountName;
-      _accountReceiverPhone.text = _accountPhone;
       controller.setCurrentUserId(prefs.getString('userId') ?? '');
       if (_accountName.isEmpty || _normalizedPhone(_accountPhone) == null || controller.currentUserId.isEmpty) {
         _profileError = 'Please complete your name and phone number in your account, then return here.';
@@ -228,20 +219,13 @@ class _SendPackageScreenState extends ConsumerState<SendPackageScreen> {
     if (!(_form.currentState?.validate() ?? false)) return;
     FocusScope.of(context).unfocus();
     final otherPhone = _normalizedPhone(_phone.text)!;
-    controller.setSenderName(
-      _sending ? _accountSenderName.text.trim() : _name.text.trim(),
-    );
-    controller.setSenderPhone(
-      _sending ? _normalizedPhone(_accountSenderPhone.text)! : otherPhone,
-    );
+    final ownPhone = _normalizedPhone(_accountPhone)!;
+    controller.setSenderName(_sending ? _accountName : _name.text.trim());
+    controller.setSenderPhone(_sending ? ownPhone : otherPhone);
     controller.setSenderCode('+234');
     controller.setSenderEmail(_sending ? _accountEmail : '');
-    controller.setReceiverName(
-      _sending ? _name.text.trim() : _accountReceiverName.text.trim(),
-    );
-    controller.setReceiverPhone(
-      _sending ? otherPhone : _normalizedPhone(_accountReceiverPhone.text)!,
-    );
+    controller.setReceiverName(_sending ? _name.text.trim() : _accountName);
+    controller.setReceiverPhone(_sending ? otherPhone : ownPhone);
     controller.setReceiverCode('+234');
     controller.setReceiverEmail(_sending ? '' : _accountEmail);
     controller.setPackageType(_packageType);
@@ -261,44 +245,9 @@ class _SendPackageScreenState extends ConsumerState<SendPackageScreen> {
     context, message: message, type: AppSnackBarType.warning,
   );
 
-  void _toggleSenderEditing() {
-    if (_editingSenderDetails) {
-      if (_accountSenderName.text.trim().isEmpty) {
-        _showSnack("Enter the sender's name");
-        return;
-      }
-      if (_normalizedPhone(_accountSenderPhone.text) == null) {
-        _showSnack('Enter a valid sender phone number');
-        return;
-      }
-    }
-    setState(() => _editingSenderDetails = !_editingSenderDetails);
-  }
-
-  void _toggleReceiverEditing() {
-    if (_editingReceiverDetails) {
-      if (_accountReceiverName.text.trim().isEmpty) {
-        _showSnack("Enter the receiver's name");
-        return;
-      }
-      if (_normalizedPhone(_accountReceiverPhone.text) == null) {
-        _showSnack('Enter a valid receiver phone number');
-        return;
-      }
-    }
-    setState(() => _editingReceiverDetails = !_editingReceiverDetails);
-  }
-
   @override
   void dispose() {
-    _name.dispose();
-    _phone.dispose();
-    _accountSenderName.dispose();
-    _accountSenderPhone.dispose();
-    _accountReceiverName.dispose();
-    _accountReceiverPhone.dispose();
-    controller.dispose();
-    super.dispose();
+    _name.dispose(); _phone.dispose(); controller.dispose(); super.dispose();
   }
 
   Widget _tab(String label, bool sending) => Expanded(
@@ -362,181 +311,25 @@ class _SendPackageScreenState extends ConsumerState<SendPackageScreen> {
     contentPadding: const EdgeInsets.all(16),
   );
 
-  Widget _senderDetailsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Sender information',
-                style: _sf(size: 16, weight: FontWeight.w700),
-              ),
-            ),
-            TextButton(
-              onPressed: _reviewing ? null : _toggleSenderEditing,
-              child: Text(
-                _editingSenderDetails ? 'Done' : 'Change',
-                style: _sf(
-                  size: 13,
-                  weight: FontWeight.w700,
-                  color: AppColors.brandBlueDark,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        if (_editingSenderDetails) ...[
-          TextFormField(
-            controller: _accountSenderName,
-            textCapitalization: TextCapitalization.words,
-            textInputAction: TextInputAction.next,
-            decoration: _input("Sender's name", 'Full name'),
-            validator: (value) => (value ?? '').trim().isEmpty
-                ? "Enter the sender's name"
-                : null,
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _accountSenderPhone,
-            keyboardType: TextInputType.phone,
-            textInputAction: TextInputAction.done,
-            decoration: _input("Sender's phone number", '08012345678'),
-            validator: (value) => _normalizedPhone(value ?? '') == null
-                ? 'Enter a valid sender phone number'
-                : null,
-          ),
-        ] else
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF3F3F3),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _accountSenderName.text.trim(),
-                  style: _sf(size: 14, weight: FontWeight.w600),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  _accountSenderPhone.text.trim(),
-                  style: _sf(size: 13, color: AppColors.textSecondary),
-                ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _receiverDetailsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Receiver information',
-                style: _sf(size: 16, weight: FontWeight.w700),
-              ),
-            ),
-            TextButton(
-              onPressed: _reviewing ? null : _toggleReceiverEditing,
-              child: Text(
-                _editingReceiverDetails ? 'Done' : 'Change',
-                style: _sf(
-                  size: 13,
-                  weight: FontWeight.w700,
-                  color: AppColors.brandBlueDark,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        if (_editingReceiverDetails) ...[
-          TextFormField(
-            controller: _accountReceiverName,
-            textCapitalization: TextCapitalization.words,
-            textInputAction: TextInputAction.next,
-            decoration: _input("Receiver's name", 'Full name'),
-            validator: (value) => (value ?? '').trim().isEmpty
-                ? "Enter the receiver's name"
-                : null,
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _accountReceiverPhone,
-            keyboardType: TextInputType.phone,
-            textInputAction: TextInputAction.done,
-            decoration: _input("Receiver's phone number", '08012345678'),
-            validator: (value) => _normalizedPhone(value ?? '') == null
-                ? 'Enter a valid receiver phone number'
-                : null,
-          ),
-        ] else
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF6F8FF),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE5EAFB)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: AppColors.brandBlueDark.withOpacity(.10),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.person_outline_rounded,
-                    color: AppColors.brandBlueDark,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _accountReceiverName.text.trim(),
-                        style: _sf(size: 14, weight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 5),
-                      Text(
-                        _accountReceiverPhone.text.trim(),
-                        style: _sf(size: 13, color: AppColors.textSecondary),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     ref.watch(locationNotifierProvider);
     return AnimatedBuilder(animation: controller, builder: (context, _) {
       final busy = _loadingProfile || _reviewing || controller.isCalculatingRoute;
       final amount = controller.totalAmount;
-      return Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
+      return AnnotatedRegion<SystemUiOverlayStyle>(
+        value: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarBrightness: Brightness.light,
+          statusBarIconBrightness: Brightness.dark,
+          systemNavigationBarColor: Colors.transparent,
+          systemNavigationBarDividerColor: Colors.transparent,
+          systemNavigationBarIconBrightness: Brightness.dark,
+          systemNavigationBarContrastEnforced: false,
+        ),
+        child: Scaffold(
+          backgroundColor: Colors.white,
+          appBar: AppBar(
           backgroundColor: Colors.white, surfaceTintColor: Colors.white, elevation: 0,
           leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () {
             if (_step > 0) { setState(() => _step = 0); }
@@ -569,31 +362,21 @@ class _SendPackageScreenState extends ConsumerState<SendPackageScreen> {
                   TextButton(onPressed: busy ? null : _loadProfile, child: const Text('Reload account details')),
                 ],
               ]) : Form(key: _form, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                if (!_sending) ...[
-                  Text('Sender information', style: _sf(size: 16, weight: FontWeight.w700)),
-                  const SizedBox(height: 16),
-                ],
-                if (_sending) ...[
-                  _senderDetailsSection(),
-                  const SizedBox(height: 28),
-                  Text('Receiver information', style: _sf(size: 16, weight: FontWeight.w700)),
-                  const SizedBox(height: 16),
-                ],
+                Text(_sending ? 'Who’s receiving?' : 'Who’s sending?', style: _sf(size: 22, weight: FontWeight.w700)),
+                const SizedBox(height: 10),
+                Text(_sending ? 'We’ll use your account details for pickup.' : 'We’ll use your account details for drop-off.',
+                  style: _sf(size: 13, color: AppColors.textSecondary, height: 1.5)),
+                const SizedBox(height: 24),
                 TextFormField(controller: _name, textCapitalization: TextCapitalization.words,
                   textInputAction: TextInputAction.next,
-                  decoration: _input(_sending ? "Receiver's name" : "Sender's name", 'Full name'),
+                  decoration: _input(_sending ? 'Receiver’s name' : 'Sender’s name', 'Full name'),
                   validator: (value) => (value ?? '').trim().isEmpty ? 'Enter their name' : null),
                 const SizedBox(height: 16),
                 TextFormField(controller: _phone, keyboardType: TextInputType.phone,
                   textInputAction: TextInputAction.done,
                   decoration: _input('Phone number', '08012345678'),
                   validator: (value) => _normalizedPhone(value ?? '') == null ? 'Enter a valid phone number' : null),
-                if (!_sending) ...[
-                  const SizedBox(height: 28),
-                  _receiverDetailsSection(),
-                  const SizedBox(height: 28),
-                ] else
-                  const SizedBox(height: 24),
+                const SizedBox(height: 24),
                 DropdownButtonFormField<String>(value: _packageType,
                   decoration: _input('Package type', ''),
                   items: const ['Parcel', 'Box', 'Food', 'Documents', 'Medicine', 'Perishable', 'Other']
@@ -610,16 +393,17 @@ class _SendPackageScreenState extends ConsumerState<SendPackageScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
                   child: Row(children: [
-                    Expanded(child: Text(busy ? 'Please wait...' : _step == 0 ? 'Continue' : 'Review delivery',
+                    Expanded(child: Text(busy ? 'Please wait…' : _step == 0 ? 'Continue' : 'Review delivery',
                       style: GoogleFonts.montserrat(fontSize: 14, fontWeight: FontWeight.w600))),
                     if (controller.isCalculatingRoute) const SizedBox(width: 18, height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    else if (amount != null) Text('\u20A6${_formatAmount(amount)}',
+                    else if (amount != null) Text('₦${_formatAmount(amount)}',
                       style: GoogleFonts.montserrat(fontSize: 16, fontWeight: FontWeight.w600)),
                   ])),
               )),
           ]),
         ))),
+        ),
       );
     });
   }
