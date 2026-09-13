@@ -187,6 +187,21 @@ class _LocationMapPickerScreenState extends State<LocationMapPickerScreen> {
     ).hasMatch(clean);
   }
 
+  bool _isBadAddressLabel(String value) {
+    final clean = value.trim().toLowerCase();
+
+    return clean.isEmpty ||
+        clean == 'unnamed road' ||
+        clean == 'unnamed street' ||
+        clean == 'unknown road' ||
+        clean == 'unknown street' ||
+        clean == 'unidentified road' ||
+        clean == 'pinned location' ||
+        clean == 'selected location' ||
+        _looksLikeCoordinates(value) ||
+        _containsPlusCode(value);
+  }
+
   String _searchBarText(LocationModel? location) {
     if (location == null) return 'Selected location';
 
@@ -232,27 +247,38 @@ class _LocationMapPickerScreenState extends State<LocationMapPickerScreen> {
 
     final shortAddress = _clean(location.shortAddress);
     final name = _clean(location.name);
+    final city = _clean(location.city);
+    final state = _clean(location.state);
     final address = _clean(location.address);
 
-    // Bottom card is intentionally STREET-FIRST.
-    // The top field already preserves what the customer searched for.
-    if (shortAddress.isNotEmpty &&
-        !_looksLikeCoordinates(shortAddress) &&
-        !_containsPlusCode(shortAddress) &&
-        shortAddress.toLowerCase() != 'pinned location') {
+    // Prefer a real street/road first.
+    if (!_isBadAddressLabel(shortAddress)) {
       return shortAddress;
     }
 
-    if (name.isNotEmpty &&
-        !_looksLikeCoordinates(name) &&
-        !_containsPlusCode(name)) {
+    // If Google only gives "Unnamed Road", fall back to a meaningful
+    // locality/place name such as "Edumega" rather than showing that label.
+    if (!_isBadAddressLabel(name)) {
       return name;
     }
 
+    // Address may contain a useful first component even when shortAddress
+    // is unusable. Avoid returning another generic/unnamed value.
     if (address.isNotEmpty &&
         !_looksLikeCoordinates(address) &&
         !_containsPlusCode(address)) {
-      return address.split(',').first.trim();
+      final firstPart = address.split(',').first.trim();
+      if (!_isBadAddressLabel(firstPart)) {
+        return firstPart;
+      }
+    }
+
+    if (!_isBadAddressLabel(city)) {
+      return city;
+    }
+
+    if (!_isBadAddressLabel(state)) {
+      return state;
     }
 
     return 'Pinned location';
@@ -266,14 +292,20 @@ class _LocationMapPickerScreenState extends State<LocationMapPickerScreen> {
     final city = _clean(location.city);
     final state = _clean(location.state);
 
-    return [city, state]
+    final parts = [city, state]
         .where(
           (part) =>
               part.isNotEmpty &&
-              !_containsPlusCode(part),
+              !_isBadAddressLabel(part),
         )
         .toSet()
-        .join(', ');
+        .toList();
+
+    if (parts.isNotEmpty) {
+      return parts.join(', ');
+    }
+
+    return 'Pinned location';
   }
 
   void _onCameraMove(CameraPosition position) {
