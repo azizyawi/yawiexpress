@@ -984,8 +984,14 @@ class LocationService {
       );
     }
 
-    final address =
+    final rawAddress =
         location['address']
+                ?.toString()
+                .trim() ??
+            '';
+
+    final rawName =
+        location['name']
                 ?.toString()
                 .trim() ??
             '';
@@ -994,41 +1000,72 @@ class LocationService {
         location['shortAddress']
                 ?.toString()
                 .trim() ??
-            location['name']
-                ?.toString()
-                .trim() ??
-            '';
+            rawName;
 
-    if (address.isNotEmpty &&
-        _containsPlusCode(address)) {
-      throw const LocationServiceException(
-        type: LocationServiceErrorType.placeNotFound,
-        message: 'Location could not be found.',
-      );
-    }
+    final city =
+        location['city']?.toString().trim().isNotEmpty == true
+            ? location['city'].toString().trim()
+            : 'Benin City';
 
-    final shortAddress =
+    final state =
+        location['state']?.toString().trim().isNotEmpty == true
+            ? location['state'].toString().trim()
+            : 'Edo';
+
+    final country =
+        location['country']?.toString().trim().isNotEmpty == true
+            ? location['country'].toString().trim()
+            : 'Nigeria';
+
+    // Do not reject a valid Google place because its formatted address
+    // contains a Plus Code. Keep the coordinates/placeId and only clean
+    // the customer-facing labels.
+    final safeName =
+        rawName.isNotEmpty && !_containsPlusCode(rawName)
+            ? rawName
+            : '';
+
+    final safeShortAddress =
         rawShortAddress.isNotEmpty &&
                 !_containsPlusCode(rawShortAddress)
             ? rawShortAddress
-            : (address.isNotEmpty
-                ? address.split(',').first.trim()
-                : '');
+            : safeName;
+
+    String safeAddress = rawAddress;
+
+    if (safeAddress.isEmpty ||
+        _containsPlusCode(safeAddress)) {
+      final parts = <String>[
+        if (safeName.isNotEmpty) safeName,
+        if (city.isNotEmpty &&
+            city.toLowerCase() != safeName.toLowerCase())
+          city,
+        if (state.isNotEmpty &&
+            state.toLowerCase() != city.toLowerCase())
+          state,
+        if (country.isNotEmpty) country,
+      ];
+
+      safeAddress = parts.join(', ');
+    }
+
+    final shortAddress =
+        safeShortAddress.isNotEmpty
+            ? safeShortAddress
+            : (safeAddress.isNotEmpty
+                ? safeAddress.split(',').first.trim()
+                : 'Selected location');
 
     return LocationModel(
       latitude: latitude,
       longitude: longitude,
-      address: address,
+      address: safeAddress,
+      name: safeName.isNotEmpty ? safeName : null,
       shortAddress: shortAddress,
-      city:
-          location['city']?.toString() ??
-              'Benin City',
-      state:
-          location['state']?.toString() ??
-              'Edo',
-      country:
-          location['country']?.toString() ??
-              'Nigeria',
+      placeId: cleanPlaceId,
+      city: city,
+      state: state,
+      country: country,
     );
   }
 

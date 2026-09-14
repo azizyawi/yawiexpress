@@ -187,21 +187,6 @@ class _LocationMapPickerScreenState extends State<LocationMapPickerScreen> {
     ).hasMatch(clean);
   }
 
-  bool _isBadAddressLabel(String value) {
-    final clean = value.trim().toLowerCase();
-
-    return clean.isEmpty ||
-        clean == 'unnamed road' ||
-        clean == 'unnamed street' ||
-        clean == 'unknown road' ||
-        clean == 'unknown street' ||
-        clean == 'unidentified road' ||
-        clean == 'pinned location' ||
-        clean == 'selected location' ||
-        _looksLikeCoordinates(value) ||
-        _containsPlusCode(value);
-  }
-
   String _searchBarText(LocationModel? location) {
     if (location == null) return 'Selected location';
 
@@ -247,38 +232,51 @@ class _LocationMapPickerScreenState extends State<LocationMapPickerScreen> {
 
     final shortAddress = _clean(location.shortAddress);
     final name = _clean(location.name);
-    final city = _clean(location.city);
-    final state = _clean(location.state);
     final address = _clean(location.address);
 
-    // Prefer a real street/road first.
-    if (!_isBadAddressLabel(shortAddress)) {
-      return shortAddress;
-    }
-
-    // If Google only gives "Unnamed Road", fall back to a meaningful
-    // locality/place name such as "Edumega" rather than showing that label.
-    if (!_isBadAddressLabel(name)) {
+    // Before the customer moves the pin, preserve the actual place selected
+    // from autocomplete instead of immediately replacing it with a road.
+    if (!_hasMovedPin &&
+        name.isNotEmpty &&
+        !_looksLikeCoordinates(name) &&
+        !_containsPlusCode(name)) {
       return name;
     }
 
-    // Address may contain a useful first component even when shortAddress
-    // is unusable. Avoid returning another generic/unnamed value.
+    // After the customer moves the pin, the coordinates become the source of
+    // truth and the reverse-geocoded road/locality is the appropriate label.
+    if (shortAddress.isNotEmpty &&
+        !_looksLikeCoordinates(shortAddress) &&
+        !_containsPlusCode(shortAddress) &&
+        shortAddress.toLowerCase() != 'pinned location' &&
+        shortAddress.toLowerCase() != 'unnamed road' &&
+        shortAddress.toLowerCase() != 'unnamed street' &&
+        shortAddress.toLowerCase() != 'unknown road' &&
+        shortAddress.toLowerCase() != 'unknown street') {
+      return shortAddress;
+    }
+
+    if (name.isNotEmpty &&
+        !_looksLikeCoordinates(name) &&
+        !_containsPlusCode(name)) {
+      return name;
+    }
+
     if (address.isNotEmpty &&
         !_looksLikeCoordinates(address) &&
         !_containsPlusCode(address)) {
-      final firstPart = address.split(',').first.trim();
-      if (!_isBadAddressLabel(firstPart)) {
-        return firstPart;
+      final first = address.split(',').first.trim();
+      if (first.toLowerCase() != 'unnamed road' &&
+          first.toLowerCase() != 'unnamed street' &&
+          first.toLowerCase() != 'unknown road' &&
+          first.toLowerCase() != 'unknown street') {
+        return first;
       }
     }
 
-    if (!_isBadAddressLabel(city)) {
+    final city = _clean(location.city);
+    if (city.isNotEmpty && !_containsPlusCode(city)) {
       return city;
-    }
-
-    if (!_isBadAddressLabel(state)) {
-      return state;
     }
 
     return 'Pinned location';
@@ -292,20 +290,14 @@ class _LocationMapPickerScreenState extends State<LocationMapPickerScreen> {
     final city = _clean(location.city);
     final state = _clean(location.state);
 
-    final parts = [city, state]
+    return [city, state]
         .where(
           (part) =>
               part.isNotEmpty &&
-              !_isBadAddressLabel(part),
+              !_containsPlusCode(part),
         )
         .toSet()
-        .toList();
-
-    if (parts.isNotEmpty) {
-      return parts.join(', ');
-    }
-
-    return 'Pinned location';
+        .join(', ');
   }
 
   void _onCameraMove(CameraPosition position) {
@@ -330,18 +322,15 @@ class _LocationMapPickerScreenState extends State<LocationMapPickerScreen> {
 
     if (_isOutsideServiceArea) return;
 
-    // IMPORTANT:
-    // First idle = GoogleMap settling on the selected search result.
-    // We DO reverse-geocode it so the bottom card becomes the road/street
-    // under the pin, but we do NOT count it as a customer drag.
+    // First idle is only GoogleMap settling on the place the customer
+    // selected from search. Keep that selected place exactly as-is.
+    //
+    // Example:
+    //   Search "SLYCE KITCHEN" -> show "SLYCE KITCHEN"
+    //   Search "Chicken Republic" -> show "Chicken Republic"
+    //
+    // Only reverse-geocode after the customer actually moves the map.
     if (_idleCount == 1) {
-      _pendingResolvePosition = _selectedPosition;
-
-      _reverseGeocodeDebounce?.cancel();
-      _reverseGeocodeDebounce = Timer(
-        const Duration(milliseconds: 250),
-        _drainReverseGeocodeQueue,
-      );
       return;
     }
 
